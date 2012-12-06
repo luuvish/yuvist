@@ -1,0 +1,49 @@
+#:kivy 1.0
+
+# =============================================================================
+# Yuvist player
+# =============================================================================
+
+<YuvistPlayer>:
+    container: container
+    cols: 1
+
+    FloatLayout:
+        cols: 1
+        id: container
+
+    GridLayout:
+        rows: 1
+        size_hint_y: None
+        height: 44
+
+        YuvistPlayerStop:
+            size_hint_x: None
+            video: root
+            width: 44
+            source: root.image_stop
+
+        YuvistPlayerPlayPause:
+            size_hint_x: None
+            video: root
+            width: 44
+            source: root.image_pause if root.state == 'play' else root.image_play
+
+        YuvistPlayerVolume:
+            video: root
+            size_hint_x: None
+            width: 44
+            source: root.image_volumehigh if root.volume > 0.8 else root.image_volumemedium if root.volume > 0.4 else root.image_volumelow if root.volume > 0 else root.image_volumemuted
+
+        Widget:
+            size_hint_x: None
+            width: 5
+
+        YuvistPlayerProgressBar:
+            video: root
+            max: root.duration or 1
+            value: root.position
+
+        Widget:
+            size_hint_x: None
+            width: 10

@@ -20,14 +20,14 @@ class FileDrop(wx.FileDropTarget):
 				dlg = wx.MessageDialog(None, "Error opening file\n" + str(IOError))
 				dlg.ShowModal()
 
-class YuvPyPanel(wx.Panel):
+class YuvPanel(wx.Panel):
 
 	def __init__(self, parent):
 		wx.Panel.__init__(self, parent, -1, style=wx.RAISED_BORDER)
 
 		self.sliderFrame       = wx.Slider(self, value=0, minValue=0, maxValue=100)
 		self.buttonVolume      = wx.Button(self, -1, '#', size=(30, -1))
-		self.sliderVolume      = wx.Slider(self, value=0, minValue=0, maxValue=100, size=(150, -1))
+		self.sliderVolume      = wx.Slider(self, value=0, minValue=0, maxValue=100, size=(80, -1))
 		self.buttonPrev10Frame = wx.Button(self, -1, '<',    size=(30, -1))
 		self.buttonPlay        = wx.Button(self, -1, 'Play', size=(40, -1))
 		self.buttonStop        = wx.Button(self, -1, 'Stop', size=(40, -1))
@@ -68,12 +68,18 @@ class YuvPyPanel(wx.Panel):
 					   (item3, 0, wx.ALIGN_RIGHT)])
 
 		vbox = wx.BoxSizer(wx.VERTICAL)
-		vbox.Add(hbox1, flag=wx.EXPAND|wx.BOTTOM, border=2)
+		vbox.Add(hbox1, flag=wx.EXPAND|wx.BOTTOM, border=1)
 		vbox.Add(hbox2, proportion=1, flag=wx.EXPAND)
+		vbox.Add((-1, 5), border=1)
 
-		self.SetSizer(vbox)
+		hbox = wx.BoxSizer(wx.HORIZONTAL)
+		hbox.Add((5,-1), border=1)
+		hbox.Add(vbox, proportion=1, flag=wx.EXPAND)
+		hbox.Add((5,-1), border=1)
 
-class YuvPyFrame(wx.Frame):
+		self.SetSizer(hbox)
+
+class YuvFrame(wx.Frame):
 
 	def __init__(self, parent):
 		wx.Frame.__init__(self, parent, -1, 'Yuv Viewer', size=(400, 200))
@@ -132,7 +138,7 @@ class YuvPyFrame(wx.Frame):
 	def createPanel(self):
 		self.view = wx.Panel(self)
 		self.view.SetBackgroundColour(wx.BLACK)
-		self.control = YuvPyPanel(self)
+		self.control = YuvPanel(self)
 
 		self.control.buttonPlay.Show(True)
 		self.control.buttonStop.Show(False)
@@ -142,7 +148,7 @@ class YuvPyFrame(wx.Frame):
 
 		sizer = wx.BoxSizer(wx.VERTICAL)
 		sizer.Add(self.view, proportion=1, flag=wx.EXPAND)
-		sizer.Add(self.control, flag=wx.EXPAND|wx.BOTTOM|wx.TOP, border=10)
+		sizer.Add(self.control, flag=wx.EXPAND|wx.BOTTOM|wx.TOP)
 
 		self.SetSizer(sizer)
 		self.SetMinSize((640, 480))
