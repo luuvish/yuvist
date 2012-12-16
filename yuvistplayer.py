@@ -23,15 +23,13 @@ from kivy.properties import (ObjectProperty, StringProperty,
 							 BooleanProperty, NumericProperty,
 							 DictProperty, OptionProperty)
 from kivy.animation import Animation
+from kivy.factory import Factory
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.progressbar import ProgressBar
 from kivy.uix.label import Label
 from kivy.uix.video import Image, Video
-from kivy.factory import Factory
 
-import sys
-sys.path.insert(0, '..')
 from yuvimage import YuvImage
 
 
@@ -202,10 +200,13 @@ class YuvistPlayer(GridLayout):
 
 	def on_state(self, instance, value):
 		if self._video is None:
-			self._video = YuvImage(source=self.source, state='play',
-								   volume=self.volume, pos_hint={'x':0, 'y':0},
+			self._video = YuvImage(source=self.source,
+			 					   state='stop',
+								   volume=self.volume,
+								   pos_hint={'x':0, 'y':0},
 								   **self.options)
 			self._video.bind(texture=self._play_started,
+							 state=self.setter('state'),
 			 				 duration=self.setter('duration'),
 			 				 position=self.setter('position'),
 			 				 volume=self.setter('volume'))

@@ -22,9 +22,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
 from kivy.clock import Clock
 from kivy.event import EventDispatcher
-from kivy.properties import StringProperty, ObjectProperty
-from kivy.properties import BooleanProperty, NumericProperty, OptionProperty
-from kivy.properties import ListProperty, ReferenceListProperty
+from kivy.properties import (StringProperty, ObjectProperty,
+                             BooleanProperty, NumericProperty, OptionProperty,
+                             ListProperty, ReferenceListProperty)
 
 
 YUV_FIX       = 16            # fixed-point precision

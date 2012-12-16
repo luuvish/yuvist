@@ -21,12 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from kivy.lang import Builder
 from kivy.clock import Clock
-from kivy.properties import StringProperty, ObjectProperty
-from kivy.properties import BooleanProperty, NumericProperty, OptionProperty
+from kivy.properties import (StringProperty, ObjectProperty,
+                             BooleanProperty, NumericProperty, OptionProperty)
 from kivy.uix.image import Image
 
-import sys
-sys.path.insert(0, '..')
 from yuvfile import YuvFile
 
 
@@ -87,6 +85,8 @@ class YuvImage(Image):
     '''
     fs = StringProperty(None)
 
+    format   = OptionProperty('yuv',
+                   options=('yuv', 'yuv400', 'yuv420', 'yuv422', 'yuv224', 'yuv444'))
     texture1 = ObjectProperty(None, allownone=True)
     texture2 = ObjectProperty(None, allownone=True)
 
@@ -99,7 +99,7 @@ class YuvImage(Image):
     options  = ObjectProperty({})
 
     def __init__(self, **kwargs):
-        self._coreimage = None
+        self._image = None
 
         from kivy.core.window import Window
         from kivy.graphics import RenderContext
@@ -115,9 +115,9 @@ class YuvImage(Image):
             self._trigger_image_load()
 
     def seek(self, percent):
-        if self._coreimage is None:
+        if self._image is None:
             raise Exception('YuvImage not loaded.')
-        self._coreimage.seek(percent)
+        self._image.seek(percent)
 
     def on_texture(self, instance, value):
         if value is not None:
@@ -136,38 +136,35 @@ class YuvImage(Image):
         return self.on_state(instance, value)
 
     def on_state(self, instance, value):
-        if not self._coreimage:
+        if not self._image:
             return
         if value == 'play':
             if self.eos:
-                self._coreimage.stop()
-                self._coreimage.position = 0.
-                self._coreimage.eos = False
+                self._image.stop()
+                self._image.position = 0.
+                self._image.eos = False
             self.eos = False
-            self._coreimage.play()
+            self._image.play()
         elif value == 'pause':
-            self._coreimage.pause()
+            self._image.pause()
         else:
-            self._coreimage.stop()
-            self._coreimage.position = 0.
-            self._coreimage.eos = False
+            self._image.stop()
 
     def on_volume(self, instance, value):
-        if self._coreimage:
-            self._coreimage.volume = value
-            pass
+        if self._image:
+            self._image.volume = value
 
     def _trigger_image_load(self, *largs):
         Clock.unschedule(self._image_load)
         Clock.schedule_once(self._image_load, -1)
 
     def _image_load(self, *largs):
-        if self._coreimage:
-            self._coreimage.stop()
+        if self._image:
+            self._image.stop()
         if not self.source:
-            if self._coreimage is not None:
-                self._coreimage.unbind(on_texture=self._on_tex_change)
-            self._coreimage = None
+            if self._image is not None:
+                self._image.unbind(on_texture=self._on_tex_change)
+            self._image = None
             self.texture  = None
             self.texture1 = None
             self.texture2 = None
@@ -176,27 +173,27 @@ class YuvImage(Image):
             filename = resource_find(self.source)
             if filename is None:
                 return
-            if self._coreimage is not None:
-                self._coreimage.unbind(on_texture=self._on_tex_change)
-            self._coreimage = ci = YuvFile(filename, size=(1920, 1080), format='yuv')
-            self._coreimage.volume = self.volume
+            if self._image is not None:
+                self._image.unbind(on_texture=self._on_tex_change)
+            self._image = ci = YuvFile(filename, size=(1920, 1080), format='yuv')
+            self._image.volume = self.volume
             ci.bind(on_texture=self._on_tex_change, on_eos=self._on_eos)
             if self.state == 'play' or self.play:
-                self._coreimage.play()
+                self._image.play()
             self.duration = 1.
             self.position = 0.
 
     def _on_tex_change(self, *largs):
-        self.duration = self._coreimage.duration
-        self.position = self._coreimage.position
-        self.texture  = self._coreimage.texture[0]
-        self.texture1 = self._coreimage.texture[1]
-        self.texture2 = self._coreimage.texture[2]
-        self.canvas.ask_update()
+        self.duration = self._image.duration
+        self.position = self._image.position
+        self.texture  = self._image.texture[0]
+        self.texture1 = self._image.texture[1]
+        self.texture2 = self._image.texture[2]
+        #self.canvas.ask_update()
         print('FPS: %2.4f (real draw: %d)' % (Clock.get_fps(), Clock.get_rfps()))
 
     def _on_eos(self, *largs):
-        self.state = 'stop'
+        self.state = 'pause'
         self.eos = True
 
 
@@ -211,11 +208,11 @@ if __name__ == '__main__':
     class YuvImageApp(App):
         def build(self):
             self.yuv = YuvImage(source=sys.argv[1], state='play')
-            self.yuv.bind(state=self.replay)
+            self.yuv.bind(eos=self.replay)
             return self.yuv
 
         def replay(self, *largs):
-            if self.yuv.state == 'stop':
+            if self.yuv.eos:
                 self.yuv.state = 'play'
 
     YuvImageApp().run()
