@@ -30,6 +30,10 @@ from kivy.uix.label import Label
 from kivy.uix.video import Image, Video
 from kivy.factory import Factory
 
+import sys
+sys.path.insert(0, '..')
+from yuvimage import YuvImage
+
 
 class YuvistPlayerVolume(Image):
 	video = ObjectProperty(None)
@@ -198,9 +202,9 @@ class YuvistPlayer(GridLayout):
 
 	def on_state(self, instance, value):
 		if self._video is None:
-			self._video = Video(source=self.source, state='play',
-								volume=self.volume, pos_hint={'x':0, 'y':0},
-								**self.options)
+			self._video = YuvImage(source=self.source, state='play',
+								   volume=self.volume, pos_hint={'x':0, 'y':0},
+								   **self.options)
 			self._video.bind(texture=self._play_started,
 			 				 duration=self.setter('duration'),
 			 				 position=self.setter('position'),

@@ -14,10 +14,10 @@ class Yuvist(App):
 		if len(sys.argv) > 1:
 			filename = sys.argv[1]
 		else:
-			filename = os.path.join(os.path.dirname(__file__), 'persona4.mp4')
+			filename = os.path.join(os.path.dirname(__file__), 'pieta.mp4')
 		print("Kivy YUV Image Viewer")
 		print("Copyright (C) 2012 Luuvish <luuvish@gmail.com>")
-		return YuvistPlayer(source=filename, state='play')
+		return YuvistPlayer(source=filename, state='pause')
 
 if __name__ == '__main__':
 	Yuvist().run()

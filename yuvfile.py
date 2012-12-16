@@ -19,7 +19,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import sys, os
+import os
+from kivy.clock import Clock
+from kivy.event import EventDispatcher
+from kivy.properties import StringProperty, ObjectProperty
+from kivy.properties import BooleanProperty, NumericProperty, OptionProperty
+from kivy.properties import ListProperty, ReferenceListProperty
+
 
 YUV_FIX       = 16            # fixed-point precision
 YUV_RANGE_MIN = -227          # min value of r/g/b output
@@ -46,7 +52,7 @@ def _init():
 _init()
 
 
-class YuvFile(object):
+class YuvFile(EventDispatcher):
 
     chroma = {
         'yuv'   : (2,2),
@@ -57,68 +63,220 @@ class YuvFile(object):
         'yuv444': (1,1)
     }
 
-    def __init__(self, filename, size, format='yuv'):
+    copy_attributes = ('_size', '_filename', '_texture', '_image')
+
+    filename = StringProperty(None)
+    width    = NumericProperty(0)
+    height   = NumericProperty(0)
+    size     = ReferenceListProperty(width, height)
+    format   = OptionProperty('yuv',
+                   options=('yuv', 'yuv400', 'yuv420', 'yuv422', 'yuv224', 'yuv444'))
+
+    eos      = BooleanProperty(False)
+    position = NumericProperty(-1)
+    duration = NumericProperty(-1)
+    volume   = NumericProperty(1.)
+    options  = ObjectProperty({})
+
+    image    = ObjectProperty(None)
+    texture  = ListProperty([])
+
+    def __init__(self, arg, **kwargs):
+        self.register_event_type('on_texture')
+        self.register_event_type('on_eos')
+
+        from threading import Lock
+        self._buffer_lock = Lock()
+        self._buffer = None
+
+        super(YuvFile, self).__init__(**kwargs)
+
+        self.size     = kwargs.get('size', [0, 0])
+        self.format   = kwargs.get('format', 'yuv')
+        self.filename = arg
+        return
+
+        if isinstance(arg, YuvFile):
+            for attr in YuvFile.copy_attributes:
+                self.__setattr__(attr, arg.__getattribute__(attr))
+        elif isinstance(arg, basestring):
+            self.filename = arg
+        else:
+            raise Exception('Unable to load image type %s' % str(type(arg)))
+
+    def play(self):
+        Clock.unschedule(self._update_glsl)
+        Clock.schedule_interval(self._update_glsl, 1 / 30.)
+
+    def step(self, next=1):
+        self.position += next
+
+    def stop(self):
+        Clock.unschedule(self._update_glsl)
+        self.position = -1
+
+    def pause(self):
+        Clock.unschedule(self._update_glsl)
+
+    def seek(self, percent):
+        self.position = percent * self.duration
+
+    def on_filename(self, instance, value):
+        if value is not None:
+            self._load_image()
+
+    def on_size(self, instance, value):
+        pass
+
+    def on_eos(self, *largs):
+        pass
+
+    def on_position(self, instance, value):
+        fp = self.image['file']
+        if value is not None and fp is not None:
+            value = int(value)
+            if value < 0:
+                pass
+            elif 0 <= value < self.duration:
+                fp.seek(value * self.image['byte'][2], os.SEEK_SET)
+                y = fp.read(self.image['byte'][0])
+                u = fp.read(self.image['byte'][1])
+                v = fp.read(self.image['byte'][1])
+                #self._buffer = self._convert_rgb((y, u, v))
+                #self._update_texture_rgb(self._buffer)
+                self._buffer = y, u, v
+                self._update_texture(self._buffer)
+                self.dispatch('on_texture')
+            elif value == self.duration:
+                self.eos = True
+                self.dispatch('on_eos')
+            else:
+                raise Exception('Overflow seek position > duration')
+
+    def on_image(self, instance, value):
+        return
+        if value is not None:
+            if hasattr(value, 'filename'):
+                self.filename = value.filename
+            self.size = value.size
+
+    def on_texture(self, *largs):
+        pass
+
+    def _update_glsl(self, dt):
+        self.position += 1
+
+    def _load_image(self, *largs):
+        filename = self.filename
+        size     = self.size
+        format   = self.format
+
         try:
-            self.file = open(filename, 'rb')
+            fp = open(filename, 'rb')
         except IOError:
             raise Exception("Can't open file %s" % filename)
-        self.size   = size
-        self.format = format
-
-        self.oneframe = self.size[0] * self.size[1] * 3 / 2
-
-        self.filesize = os.path.getsize(filename)
-        self.duration = self.filesize // self.oneframe
-        self.position = 0
+        filesize = os.path.getsize(filename)
 
         if format not in YuvFile.chroma:
             raise Exception("Not support chroma format")
-        self.scale = YuvFile.chroma[format]
+        subpixel = YuvFile.chroma[format]
+        ysize = size
+        csize = size[0] // subpixel[0], size[1] // subpixel[1]
+        ybyte = ysize[0] * ysize[1]
+        cbyte = csize[0] * csize[1]
 
-    def close(self):
-        if self.file:
-            self.file.close()
+        self.image = {
+            'file'    : fp,
+            'filesize': filesize,
+            'subpixel': YuvFile.chroma[format],
+            'size'    : (ysize, csize),
+            'byte'    : (ybyte, cbyte, ybyte + cbyte * 2)
+        }
+        self.duration = float(self.image['filesize'] // self.image['byte'][2])
+        self.position = 0.
 
-    def read(self, position=None):
-        if position:
-            self.seek(position)
-        if self.position >= self.duration:
-            self.seek(0)
+    def _read_image(self, *largs):
+        pass
 
-        y = self.file.read(self.size[0] * self.size[1])
-        u = self.file.read(self.size[0] * self.size[1] / 4)
-        v = self.file.read(self.size[0] * self.size[1] / 4)
-        self.position += 1
-        return y, u, v
+    def _update(self, dt):
+        buf = None
+        with self._buffer_lock:
+            buf = self._buffer
+            self._buffer = None
+        if buf is not None:
+            self._update_texture(buf)
+            self.dispatch('on_texture')
 
-        buf = self.file.read(self.oneframe)
-        buf = self.YUVtoRGB(buf)
-        buf = ''.join(map(chr, buf))
-        return buf
+    def _update_texture(self, buf):
+        ysize = self.image['size'][0]
+        csize = self.image['size'][1]
+        texture = self.texture
 
-    def seek(self, position):
-        if position < self.duration:
-            self.position = position
-            self.file.seek(position * self.oneframe, os.SEEK_SET)
+        if not texture:
+            def populate_texture_y(texture):
+                texture.flip_vertical()
+                texture.blit_buffer(self._buffer[0], size=ysize, colorfmt='luminance')
+            def populate_texture_u(texture):
+                texture.flip_vertical()
+                texture.blit_buffer(self._buffer[1], size=csize, colorfmt='luminance')
+            def populate_texture_v(texture):
+                texture.flip_vertical()
+                texture.blit_buffer(self._buffer[2], size=csize, colorfmt='luminance')
 
-    def YUVtoRGB(self, yuvs):
-        def raster(yuvs):
-            format = self.format
-            size   = self.size
-            scale  = self.scale
-            ubase  = size[0] * size[1]
-            vbase  = ubase + (size[0] // scale[0]) * (size[1] // scale[1])
-            cwidth = size[0] // scale[0]
+            from kivy.graphics.texture import Texture
+            texture = [Texture.create(size=ysize, colorfmt='luminance'),
+                       Texture.create(size=csize, colorfmt='luminance'),
+                       Texture.create(size=csize, colorfmt='luminance')]
+            texture[0].add_reload_observer(populate_texture_y)
+            texture[1].add_reload_observer(populate_texture_u)
+            texture[2].add_reload_observer(populate_texture_v)
+            texture[0].flip_vertical()
+            texture[1].flip_vertical()
+            texture[2].flip_vertical()
+
+        texture[0].blit_buffer(self._buffer[0], size=ysize, colorfmt='luminance')
+        texture[1].blit_buffer(self._buffer[1], size=csize, colorfmt='luminance')
+        texture[2].blit_buffer(self._buffer[2], size=csize, colorfmt='luminance')
+        self.texture = texture
+
+    def _update_texture_rgb(self, buf):
+        ysize = self.image['size'][0]
+        csize = self.image['size'][1]
+        texture = self.texture
+
+        if not texture:
+            def populate_texture(texture):
+                texture.flip_vertical()
+                texture.blit_buffer(self._buffer[0], size=ysize, colorfmt='rgb')
+
+            from kivy.graphics.texture import Texture
+            texture = [Texture.create(size=ysize, colorfmt='rgb'), None, None]
+            texture[0].add_reload_observer(populate_texture)
+            texture[0].flip_vertical()
+
+        texture[0].blit_buffer(self._buffer[0], size=ysize, colorfmt='rgb')
+        self.texture = texture
+
+    def _convert_rgb(self, buf):
+        format   = self.format
+        subpixel = self.image['subpixel']
+        ysize    = self.image['size'][0]
+        csize    = self.image['size'][1]
+
+        def raster(buf):
+            ybuf, ubuf, vbuf = buf
             y, u, v = 128, 128, 128
-            for posy in xrange(size[1]):
-                for posx in xrange(size[0]):
-                    y = yuvs[size[0] * posy + posx]
+            for posy in xrange(ysize[1]):
+                for posx in xrange(ysize[0]):
+                    y = ybuf[ysize[0] * posy + posx]
                     if format != 'yuv400':
-                        u = yuvs[ubase + cwidth * (posy // scale[1]) + (posx // scale[0])]
-                        v = yuvs[vbase + cwidth * (posy // scale[1]) + (posx // scale[0])]
+                        p = csize[0] * (posy // subpixel[1]) + (posx // subpixel[0])
+                        u = ubuf[p]
+                        v = vbuf[p]
                     yield ord(y), ord(u), ord(v)
 
         clip = lambda x: min(max(0, x), 255)
+
         def rgb(y, u, v):
             r = 1.164 * (y-16)                   + 1.596 * (v-128)
             g = 1.164 * (y-16) - 0.391 * (u-128) - 0.813 * (v-128)
@@ -141,10 +299,11 @@ class YuvFile(object):
             b = VP8kClip[y + b_off - YUV_RANGE_MIN]
             return r, g, b
 
-        rgbs = []
-        for y, u, v in raster(yuvs):
+        rgb = []
+        for y, u, v in raster(buf):
             r, g, b = rgb3(y, u, v)
-            rgbs.append(r)
-            rgbs.append(g)
-            rgbs.append(b)
-        return rgbs
+            rgb.append(r)
+            rgb.append(g)
+            rgb.append(b)
+        rgb = ''.join(map(chr, rgb))
+        return rgb, '', ''
