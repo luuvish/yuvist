@@ -190,7 +190,7 @@ class YuvImage(Image):
         self.texture1 = self._image.texture[1]
         self.texture2 = self._image.texture[2]
         #self.canvas.ask_update()
-        print('FPS: %2.4f (real draw: %d)' % (Clock.get_fps(), Clock.get_rfps()))
+        #print('FPS: %2.4f (real draw: %d)' % (Clock.get_fps(), Clock.get_rfps()))
 
     def _on_eos(self, *largs):
         self.state = 'pause'
