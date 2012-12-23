@@ -20,10 +20,154 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from kivy.lang import Builder
+from kivy.properties import (ObjectProperty, OptionProperty, ListProperty)
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.popup import Popup
 
 
 Builder.load_string('''
+[VSeparator@Widget]:
+    size_hint_x: None
+    width: 10
+    canvas:
+        Color:
+            rgba: .8, .8, .8, .3
+        Rectangle:
+            size: 1, self.height
+            pos: self.center_x, self.y
+
+[HSeparator@Label]:
+    size_hint_y: None
+    height: max(dp(45), self.texture_size[1] + dp(10))
+    text: ctx.text if 'text' in ctx else ''
+    text_size: self.width, None
+    valign: 'middle'
+    halign: 'center'
+    canvas.before:
+        Color:
+            rgba: .2, .2, .2, .8
+        Rectangle:
+            size: self.size
+            pos: self.pos
+
+<ImageSizePanel>:
+    orientation: 'vertical'
+    spinner: spinner
+
+    BoxLayout:
+        orientation: 'horizontal'
+
+        RelativeLayout:
+            orientation: 'vertical'
+            size_hint_x: .5
+
+            Label:
+                pos_hint: {'top':1}
+                size_hint_y: None
+                height: 45
+                text: 'Resolution'
+                canvas.before:
+                    Color:
+                        rgba: .2, .2, .2, .8
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+
+            Spinner:
+                id: spinner
+                pos_hint: {'center_x':.5, 'center_y':.6}
+                size_hint: (.8, None)
+                height: 40
+
+            GridLayout:
+                rows: 2
+                cols: 2
+                pos_hint: {'center_x':.5, 'center_y':.35}
+                size_hint_y: None
+                height: 40
+
+                TextInput:
+                    size_hint: (.3, None)
+                    height: 40
+                    text: str(root.resolution[0])
+                Slider:
+                    size_hint: (.7, None)
+                    height: 40
+                    max: 8192
+                    value: str(root.resolution[0])
+                TextInput:
+                    size_hint: (.3, None)
+                    height: 40
+                    text: str(root.resolution[1])
+                Slider:
+                    size_hint: (.7, None)
+                    height: 40
+                    max: 4320
+                    value: str(root.resolution[1])
+
+        VSeparator
+
+        RelativeLayout:
+            orientation: 'vertical'
+            size_hint_x: .5
+
+            Label:
+                pos_hint: {'top':1}
+                size_hint_y: None
+                height: 45
+                text: 'Chroma Format'
+                canvas.before:
+                    Color:
+                        rgba: .2, .2, .2, .8
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+
+            GridLayout:
+                pos_hint: {'center_x':.5, 'center_y':.4}
+                size_hint: (.8, None)
+                height: 150
+                rows: 5
+
+                ToggleButton:
+                    text: '4:0:0'
+                    group: 'chroma'
+                ToggleButton:
+                    text: '4:2:0'
+                    group: 'chroma'
+                ToggleButton:
+                    text: '4:2:2'
+                    group: 'chroma'
+                ToggleButton:
+                    text: '4:2:2v'
+                    group: 'chroma'
+                ToggleButton:
+                    text: '4:4:4'
+                    group: 'chroma'
+
+    Widget:
+        size_hint_y: None
+        height: 28
+
+    GridLayout:
+        size_hint_y: None
+        height: 32
+        cols: 2
+
+        Button:
+            text: 'Cancel'
+        Button:
+            text: 'Ok'
+
+<PlaylistPanel>:
+    cols: 2
+
+    BoxLayout:
+        orientation: 'vertical'
+
+    BoxLayout:
+        orientation: 'vertical'
+
 <ConfigPanel>:
     orientation: 'horizontal'
     spacing: 4
@@ -36,6 +180,7 @@ Builder.load_string('''
         border: (0, 0, 0, 0)
         background_normal: 'images/MainControlPanel.tiff'
         background_down: 'images/MainControlPanelHover.tiff'
+        on_press: root._imagesize()
 
     Button:
         pos_hint: {'center_y':.7}
@@ -44,8 +189,99 @@ Builder.load_string('''
         border: (0, 0, 0, 0)
         background_normal: 'images/MainPlaylist.tiff'
         background_down: 'images/MainPlaylistHover.tiff'
+        on_press: root._playlist()
 ''')
 
 
-class ConfigPanel(BoxLayout):
+class ImageSizePanel(BoxLayout):
+
+    resolutions = (
+        (( 128,   96), 'SQCIF'),
+        (( 176,  144), 'QCIF'),
+        (( 320,  240), 'QVGA'),
+        (( 352,  240), '525 SIF'),
+        (( 352,  288), 'CIF'),
+        (( 352,  480), '525 HHR'),
+        (( 352,  576), '625 HHR'),
+        (( 640,  360), 'Q720p'),
+        (( 640,  480), 'VGA'),
+        (( 704,  480), '525 4SIF'),
+        (( 720,  480), '525 SD'),
+        (( 704,  576), '4CIF'),
+        (( 720,  576), '625 SD'),
+        (( 864,  480), '480p'),
+        (( 800,  600), 'SVGA'),
+        (( 960,  540), 'QHD'),
+        ((1024,  768), 'XGA'),
+        ((1280,  720), '720p HD'),
+        ((1280,  960), '4VGA'),
+        ((1280, 1024), 'SXGA'),
+        ((1408,  960), '525 16SIF'),
+        ((1408, 1152), '16CIF'),
+        ((1600, 1200), '4SVGA'),
+        ((1920, 1080), '1080 HD'),
+        ((2048, 1024), '2Kx1K'),
+        ((2048, 1080), '2Kx1080'),
+        ((2560, 1920), '16VGA'),
+        ((3616, 1536), '3616x1536'),
+        ((3680, 1536), '3672x1536'),
+        ((3840, 2160), '4HD'),
+        ((4096, 2048), '4Kx2K'),
+        ((4096, 2160), '4096x2160'),
+        ((4096, 2304), '4096x2304'),
+        ((7680, 4320), '7680x4320'),
+        ((8192, 4096), '8192x4096'),
+        ((8192, 4320), '8192x4320')
+    )
+
+    spinner = ObjectProperty(None)
+    resolution = ListProperty([1920, 1080])
+
+    def __init__(self, **kwargs):
+        super(ImageSizePanel, self).__init__(**kwargs)
+
+        def show_selected_value(spinner, text):
+            self.resolution = map(int, text.split('x'))
+
+        self.spinner.values = ('%dx%d' % res for res, name in self.resolutions)
+        self.spinner.text = '1920x1080'
+        self.spinner.bind(text=show_selected_value)
+
+
+class PlaylistPanel(BoxLayout):
     pass
+
+
+class ConfigPanel(BoxLayout):
+    video = ObjectProperty(None)
+    state = OptionProperty('stop', options=('play', 'pause', 'stop'))
+
+    def __init__(self, **kwargs):
+        super(ConfigPanel, self).__init__(**kwargs)
+
+    def on_video(self, instance, value):
+        self.video.bind(state=self.setter('state'))
+
+    def _imagesize(self):
+        popup = None
+        def submit(instance, selected, touch=None):
+            self.video.source = selected[0]
+            self.video.state = 'play'
+            popup.dismiss()
+        from kivy.uix.label import Label
+        popup = Popup(title='Open Image File',
+                      content=ImageSizePanel(),
+                      size_hint=(None, None), size=(400, 400))
+        popup.open()
+
+    def _playlist(self):
+        popup = None
+        def submit(instance, selected, touch=None):
+            self.video.source = selected[0]
+            self.video.state = 'play'
+            popup.dismiss()
+        from kivy.uix.label import Label
+        popup = Popup(title='Open Image File',
+                      content=Label(text='play list'),
+                      size_hint=(None, None), size=(400, 400))
+        popup.open()

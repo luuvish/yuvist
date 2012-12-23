@@ -20,11 +20,35 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from kivy.lang import Builder
-from kivy.properties import (ObjectProperty, OptionProperty)
+from kivy.properties import (StringProperty, ObjectProperty, OptionProperty)
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.floatlayout import FloatLayout
 
 
 Builder.load_string('''
+<OpenDialog>:
+    BoxLayout:
+        size: root.size
+        pos: root.pos
+        orientation: 'vertical'
+
+        FileChooserListView:
+            id: filechooser
+            multiselect: False
+            path: root.path
+
+        BoxLayout:
+            size_hint_y: None
+            height: 30
+
+            Button:
+                text: 'Cancel'
+                on_release: root.cancel()
+
+            Button:
+                text: 'Open'
+                on_release: root.open(filechooser.path, filechooser.selection)
+
 <PlayPanel>:
     orientation: 'horizontal'
     spacing: 8
@@ -76,6 +100,12 @@ Builder.load_string('''
 ''')
 
 
+class OpenDialog(FloatLayout):
+    path = StringProperty('.')
+    open = ObjectProperty(None)
+    cancel = ObjectProperty(None)
+
+
 class PlayPanel(BoxLayout):
     video = ObjectProperty(None)
     state = OptionProperty('stop', options=('play', 'pause', 'stop'))
@@ -87,18 +117,54 @@ class PlayPanel(BoxLayout):
         self.video.bind(state=self.setter('state'))
 
     def _play_pause(self):
-        if   self.video.state == 'stop':
+        if not self.video.source:
+            popup = None
+            def ok(path, selected):
+                if len(selected) > 0:
+                    import os
+                    self.video.source = os.path.join(path, selected[0])
+                    self.video.state = 'play'
+                popup.dismiss()
+            def submit():
+                popup.dismiss()
+            from kivy.uix.popup import Popup
+            from kivy.core.window import Window
+            size = Window.size[0] - 160, Window.size[1] - 100
+            popup = Popup(title='Open Image File',
+                          content=OpenDialog(open=ok, cancel=submit),
+                          size_hint=(None, None), size=size)
+            popup.open()
+            return
+        if self.video.state == 'stop':
             self.video.state = 'play'
-            print '_play_pause'
         elif self.video.state == 'play':
             self.video.state = 'pause'
         else:
             self.video.state = 'play'
 
     def _prev_movie(self):
-        print 'on_prev_movie'
+        if not self.video.source:
+            return
+        try:
+            playlist = self.video.playlist
+            i = playlist.index(self.video.source)
+            if i > 0:
+                self.video.source = playlist[i-1]
+                self.video.state = 'play'
+        except ValueError:
+            pass
+
     def _next_movie(self):
-        print 'on_next_movie'
+        if not self.video.source:
+            return
+        try:
+            playlist = self.video.playlist
+            i = playlist.index(self.video.source)
+            if i < len(playlist):
+                self.video.source = playlist[i+1]
+                self.video.state = 'play'
+        except ValueError:
+            pass
 
     def _prev_seek(self):
         if self.video.duration == 0:

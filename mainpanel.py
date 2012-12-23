@@ -20,8 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from kivy.lang import Builder
+from kivy.clock import Clock
 from kivy.properties import (ObjectProperty, StringProperty,
-                             BooleanProperty, NumericProperty,
+                             BooleanProperty, NumericProperty, ListProperty,
                              DictProperty, OptionProperty)
 from kivy.uix.gridlayout import GridLayout
 
@@ -47,7 +48,7 @@ Builder.load_string('''
 
         canvas:
             Color:
-                rgb: .8, .8, .8
+                hsv: 0, 0, .8
             Rectangle:
                 size: self.size
                 pos: self.pos
@@ -89,50 +90,86 @@ class MainPanel(GridLayout):
     options   = DictProperty({})
     container = ObjectProperty(None)
 
+    playlist  = ListProperty([])
+
     def __init__(self, **kwargs):
-        self._video = None
-        super(MainPanel, self).__init__(cols=1, **kwargs)
+        self._image = None
+        super(MainPanel, self).__init__(**kwargs)
+
+        if self.source:
+            self._trigger_image_load()
+
+    def seek(self, percent):
+        if not self._image:
+            return
+        self._image.seek(percent)
 
     def on_source(self, instance, value):
         if not self.container:
             return
         self.container.clear_widgets()
+        self._trigger_image_load()
 
     def on_state(self, instance, value):
-        if self._video is None:
-            if self.source.lower().endswith('.yuv'):
-                from yuvimage import YuvImage as CoreImage
-            else:
-                from kivy.uix.video import Video as CoreImage
-            self._video = CoreImage(source=self.source,
-                                    state='stop',
-                                    volume=self.volume,
-                                    pos_hint={'x':0, 'y':0},
-                                    **self.options)
-            self._video.bind(texture=self._play_started,
-                             state=self.setter('state'),
-                             duration=self.setter('duration'),
-                             position=self.setter('position'),
-                             volume=self.setter('volume'))
-        self._video.state = value
+        if self._image is None:
+            self._trigger_image_load()
+        else:
+            self._image.state = value
 
     def on_play(self, instance, value):
         value = 'play' if value else 'stop'
         return self.on_state(instance, value)
 
     def on_volume(self, instance, value):
-        if not self._video:
+        if not self._image:
             return
-        self._video.volume = value
+        self._image.volume = value
 
-    def seek(self, percent):
-        if not self._video:
-            return
-        self._video.seek(percent)
+    def _trigger_image_load(self, *largs):
+        Clock.unschedule(self._image_load)
+        Clock.schedule_once(self._image_load, -1)
+
+    def _image_load(self, *largs):
+        if self._image:
+            self._image.state = 'stop'
+        if not self.source:
+            if self._image is not None:
+                self._image.unbind(texture=self._play_started,
+                                   state=self.setter('state'),
+                                   duration=self.setter('duration'),
+                                   position=self.setter('position'),
+                                   volume=self.setter('volume'))
+            self._image = None
+        else:
+            from kivy.resources import resource_find
+            filename = resource_find(self.source)
+            if filename is None:
+                return
+            if filename.lower().endswith('.yuv'):
+                from yuvimage import YuvImage as CoreImage
+            else:
+                from kivy.uix.video import Video as CoreImage
+            if self._image is not None:
+                self._image.unbind(texture=self._play_started,
+                                   state=self.setter('state'),
+                                   duration=self.setter('duration'),
+                                   position=self.setter('position'),
+                                   volume=self.setter('volume'))
+            self._image = CoreImage(source=filename,
+                                    state='stop',
+                                    volume=self.volume,
+                                    pos_hint={'x':0, 'y':0},
+                                    **self.options)
+            self._image.bind(texture=self._play_started,
+                             state=self.setter('state'),
+                             duration=self.setter('duration'),
+                             position=self.setter('position'),
+                             volume=self.setter('volume'))
+            self._image.state = self.state
 
     def _play_started(self, instance, value):
         self.container.clear_widgets()
-        self.container.add_widget(self._video)
+        self.container.add_widget(self._image)
 
 
 if __name__ == '__main__':

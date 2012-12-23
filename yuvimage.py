@@ -32,11 +32,11 @@ Builder.load_string('''
 <YuvImage>:
     canvas:
         Color:
-            rgb: (1, 1, 1)
+            rgba: self.color
         Rectangle:
             texture: self.texture
-            size: self.size
-            pos: self.pos
+            size: self.norm_image_size
+            pos: self.center_x - self.norm_image_size[0] / 2., self.center_y - self.norm_image_size[1] / 2.
         BindTexture:
             texture: self.texture1
             index: 1
@@ -44,6 +44,7 @@ Builder.load_string('''
             texture: self.texture2
             index: 2
 ''')
+
 
 class YuvImage(Image):
 
@@ -104,7 +105,6 @@ class YuvImage(Image):
         from kivy.core.window import Window
         from kivy.graphics import RenderContext
         self.canvas = RenderContext(fs=self.FS_CONVERT_YUV420_RGB)
-        self.canvas['projection_mat'] = Window.render_context['projection_mat']
         self.canvas['texture1'] = 1
         self.canvas['texture2'] = 2
 
@@ -119,9 +119,9 @@ class YuvImage(Image):
             raise Exception('YuvImage not loaded.')
         self._image.seek(percent)
 
-    def on_texture(self, instance, value):
-        if value is not None:
-            self.texture_size = list(value.size)
+    def on_size(self, instance, value):
+        from kivy.core.window import Window
+        self.canvas['projection_mat'] = Window.render_context['projection_mat']
 
     def on_fs(self, instance, value):
         shader = self.canvas.shader

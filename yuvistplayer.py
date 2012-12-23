@@ -26,9 +26,7 @@ from kivy.properties import (ObjectProperty, StringProperty,
 from kivy.animation import Animation
 from kivy.factory import Factory
 from kivy.uix.gridlayout import GridLayout
-from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.progressbar import ProgressBar
-from kivy.uix.label import Label
 from kivy.uix.video import Image
 
 from yuvimage import YuvImage
