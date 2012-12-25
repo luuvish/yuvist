@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from kivy.lang import Builder
 from kivy.clock import Clock
-from kivy.properties import (StringProperty, ObjectProperty,
+from kivy.properties import (StringProperty, ObjectProperty, ListProperty,
                              BooleanProperty, NumericProperty, OptionProperty)
 from kivy.uix.image import Image
 
@@ -86,18 +86,19 @@ class YuvImage(Image):
     '''
     fs = StringProperty(None)
 
-    format   = OptionProperty('yuv',
-                   options=('yuv', 'yuv400', 'yuv420', 'yuv422', 'yuv224', 'yuv444'))
-    texture1 = ObjectProperty(None, allownone=True)
-    texture2 = ObjectProperty(None, allownone=True)
+    format     = OptionProperty('yuv', options=('yuv', 'yuv400', 'yuv420',
+                                                'yuv422', 'yuv224', 'yuv444'))
+    resolution = ListProperty([0, 0])
+    texture1   = ObjectProperty(None, allownone=True)
+    texture2   = ObjectProperty(None, allownone=True)
 
-    state    = OptionProperty('stop', options=('play', 'pause', 'stop'))
-    play     = BooleanProperty(False)
-    eos      = BooleanProperty(False)
-    position = NumericProperty(-1)
-    duration = NumericProperty(-1)
-    volume   = NumericProperty(1.)
-    options  = ObjectProperty({})
+    state      = OptionProperty('stop', options=('play', 'pause', 'stop'))
+    play       = BooleanProperty(False)
+    eos        = BooleanProperty(False)
+    position   = NumericProperty(-1)
+    duration   = NumericProperty(-1)
+    volume     = NumericProperty(1.)
+    options    = ObjectProperty({})
 
     def __init__(self, **kwargs):
         self._image = None
@@ -175,7 +176,7 @@ class YuvImage(Image):
                 return
             if self._image is not None:
                 self._image.unbind(on_texture=self._on_tex_change)
-            self._image = ci = YuvFile(filename, size=(1920, 1080), format='yuv')
+            self._image = ci = YuvFile(filename, format=self.format, size=self.resolution)
             self._image.volume = self.volume
             ci.bind(on_texture=self._on_tex_change, on_eos=self._on_eos)
             if self.state == 'play' or self.play:

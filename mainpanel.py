@@ -80,17 +80,21 @@ Builder.load_string('''
 
 
 class MainPanel(GridLayout):
-    source    = StringProperty('')
-    duration  = NumericProperty(-1)
-    position  = NumericProperty(0)
-    volume    = NumericProperty(1.0)
-    state     = OptionProperty('stop', options=('play', 'pause', 'stop'))
-    play      = BooleanProperty(False)
+    source     = StringProperty('')
+    format     = OptionProperty('yuv', options=('yuv', 'yuv400', 'yuv420',
+                                                'yuv422', 'yuv422v', 'yuv444'))
+    resolution = ListProperty([1920, 1080])
 
-    options   = DictProperty({})
-    container = ObjectProperty(None)
+    duration   = NumericProperty(-1)
+    position   = NumericProperty(0)
+    volume     = NumericProperty(1.0)
+    state      = OptionProperty('stop', options=('play', 'pause', 'stop'))
+    play       = BooleanProperty(False)
 
-    playlist  = ListProperty([])
+    options    = DictProperty({})
+    container  = ObjectProperty(None)
+
+    playlist   = ListProperty([])
 
     def __init__(self, **kwargs):
         self._image = None
@@ -156,6 +160,8 @@ class MainPanel(GridLayout):
                                    position=self.setter('position'),
                                    volume=self.setter('volume'))
             self._image = CoreImage(source=filename,
+                                    format=self.format,
+                                    resolution=self.resolution,
                                     state='stop',
                                     volume=self.volume,
                                     pos_hint={'x':0, 'y':0},

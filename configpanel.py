@@ -90,20 +90,26 @@ Builder.load_string('''
                     size_hint: (.3, None)
                     height: 40
                     text: str(root.resolution[0])
+                    on_text: root.resolution[0] = int(self.text)
                 Slider:
                     size_hint: (.7, None)
                     height: 40
                     max: 8192
-                    value: str(root.resolution[0])
+                    value: root.resolution[0]
+                    step: 1
+                    on_value: root.resolution[0] = int(self.value)
                 TextInput:
                     size_hint: (.3, None)
                     height: 40
                     text: str(root.resolution[1])
+                    on_text: root.resolution[1] = int(self.text)
                 Slider:
                     size_hint: (.7, None)
                     height: 40
                     max: 4320
-                    value: str(root.resolution[1])
+                    value: root.resolution[1]
+                    step: 1
+                    on_value: root.resolution[1] = int(self.value)
 
         VSeparator
 
@@ -132,18 +138,28 @@ Builder.load_string('''
                 ToggleButton:
                     text: '4:0:0'
                     group: 'chroma'
+                    state: 'down' if root.format == 'yuv400' else 'normal'
+                    on_press: root.format = 'yuv400'
                 ToggleButton:
                     text: '4:2:0'
                     group: 'chroma'
+                    state: 'down' if root.format == 'yuv420' else 'normal'
+                    on_press: root.format = 'yuv420'
                 ToggleButton:
                     text: '4:2:2'
                     group: 'chroma'
+                    state: 'down' if root.format == 'yuv422' else 'normal'
+                    on_press: root.format = 'yuv422'
                 ToggleButton:
                     text: '4:2:2v'
                     group: 'chroma'
+                    state: 'down' if root.format == 'yuv422v' else 'normal'
+                    on_press: root.format = 'yuv422v'
                 ToggleButton:
                     text: '4:4:4'
                     group: 'chroma'
+                    state: 'down' if root.format == 'yuv444' else 'normal'
+                    on_press: root.format = 'yuv444'
 
     Widget:
         size_hint_y: None
@@ -156,8 +172,10 @@ Builder.load_string('''
 
         Button:
             text: 'Cancel'
+            on_press: root.cancel()
         Button:
             text: 'Ok'
+            on_press: root.ok(root.format, root.resolution)
 
 <PlaylistPanel>:
     cols: 2
@@ -234,17 +252,29 @@ class ImageSizePanel(BoxLayout):
         ((8192, 4320), '8192x4320')
     )
 
-    spinner = ObjectProperty(None)
-    resolution = ListProperty([1920, 1080])
+    spinner    = ObjectProperty(None)
+    input_w    = ObjectProperty(None)
+    input_h    = ObjectProperty(None)
+    slider_w   = ObjectProperty(None)
+    slider_h   = ObjectProperty(None)
+
+    format     = OptionProperty('yuv', options=('yuv', 'yuv400', 'yuv420',
+                                                'yuv422', 'yuv422v', 'yuv444'))
+    resolution = ListProperty([0, 0])
+    ok         = ObjectProperty(None)
+    cancel     = ObjectProperty(None)
 
     def __init__(self, **kwargs):
         super(ImageSizePanel, self).__init__(**kwargs)
+
+        if self.format == 'yuv':
+            self.format = 'yuv420'
 
         def show_selected_value(spinner, text):
             self.resolution = map(int, text.split('x'))
 
         self.spinner.values = ('%dx%d' % res for res, name in self.resolutions)
-        self.spinner.text = '1920x1080'
+        self.spinner.text = '%dx%d' % tuple(self.resolution)
         self.spinner.bind(text=show_selected_value)
 
 
@@ -264,13 +294,17 @@ class ConfigPanel(BoxLayout):
 
     def _imagesize(self):
         popup = None
-        def submit(instance, selected, touch=None):
-            self.video.source = selected[0]
-            self.video.state = 'play'
+        def ok(format, resolution):
+            print 'resolution %s, format %s' % (resolution, format)
+            self.video.resolution = resolution
+            self.video.format = format
             popup.dismiss()
-        from kivy.uix.label import Label
-        popup = Popup(title='Open Image File',
-                      content=ImageSizePanel(),
+        def cancel():
+            popup.dismiss()
+        popup = Popup(title='Configuration YUV image',
+                      content=ImageSizePanel(resolution=self.video.resolution,
+                                             format=self.video.format,
+                                             ok=ok, cancel=cancel),
                       size_hint=(None, None), size=(400, 400))
         popup.open()
 

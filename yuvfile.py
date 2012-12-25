@@ -66,11 +66,11 @@ class YuvFile(EventDispatcher):
     copy_attributes = ('_size', '_filename', '_texture', '_image')
 
     filename = StringProperty(None)
+    format   = OptionProperty('yuv', options=('yuv', 'yuv400', 'yuv420',
+                                              'yuv422', 'yuv224', 'yuv444'))
     width    = NumericProperty(0)
     height   = NumericProperty(0)
     size     = ReferenceListProperty(width, height)
-    format   = OptionProperty('yuv',
-                   options=('yuv', 'yuv400', 'yuv420', 'yuv422', 'yuv224', 'yuv444'))
 
     eos      = BooleanProperty(False)
     position = NumericProperty(-1)
@@ -91,8 +91,8 @@ class YuvFile(EventDispatcher):
 
         super(YuvFile, self).__init__(**kwargs)
 
-        self.size     = kwargs.get('size', [0, 0])
         self.format   = kwargs.get('format', 'yuv')
+        self.size     = kwargs.get('size', [0, 0])
         self.filename = arg
         return
 
