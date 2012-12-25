@@ -11,7 +11,7 @@ YUV image file viewer
 * High performace YUV to RGB conversion using OpenGL Shader
 * Look and feel as Movist 0.6.8 (http://cocoable.tistory.com/)
 
-![snapshot](https://github.com/luuvish/yuvist/snapshot.png "Yuvist Snapshot")
+![snapshot](https://github.com/luuvish/yuvist/blob/master/snapshot.png "Yuvist Snapshot")
 
 ### Installation
 
