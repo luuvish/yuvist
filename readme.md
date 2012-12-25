@@ -3,7 +3,8 @@ Yuvist
 
 YUV image file viewer
 
-### Feature
+Feature
+-------
 
 * Using Kivy framework, running on Windows, Linux, MacOSX, Android and iOS
 * Playing movie with various video format (Gstreamer)
@@ -11,29 +12,37 @@ YUV image file viewer
 * High performace YUV to RGB conversion using OpenGL Shader
 * Look and feel as Movist 0.6.8 (http://cocoable.tistory.com/)
 
-![snapshot](https://github.com/luuvish/yuvist/blob/master/snapshot.png "Yuvist Snapshot")
+Snapshot
+--------
 
-### Installation
+![snapshot](https://github.com/luuvish/yuvist/raw/master/snapshot.png "Yuvist Snapshot")
+
+Installation
+------------
 
     $ curl https://github.com/luuvish/yuvist/yuvist.dmg
 
-### Usage
+Usage
+-----
 
     $ yuvist.py -r 1920x1080 *.yuv
     $ yuvist.app --args -r 1920x1080 *.yuv
 
-### Compilation
+Compilation
+-----------
 
     $ sudo port install python27 py27-opencl py27-cython py27-game py27-pil
     $ sudo port install gstreamer gst-ffmpeg gst-plugins-base gst-plugins-good py27-gst-python
 	$ kivy
     $ pyinstaller
 
-### Credits
+Credits
+-------
 
 - [luuvish](http://github.com/luuvish)
 
-### License
+License
+-------
 
 (The MIT License)
 
