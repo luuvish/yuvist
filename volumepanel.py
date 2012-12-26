@@ -24,7 +24,7 @@ from kivy.properties import (ObjectProperty, BooleanProperty,
                              OptionProperty, NumericProperty, AliasProperty,
                              ReferenceListProperty, BoundedNumericProperty)
 from kivy.uix.widget import Widget
-from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.relativelayout import RelativeLayout
 
 
 Builder.load_string('''
@@ -33,35 +33,33 @@ Builder.load_string('''
         Color:
             rgb: 1, 1, 1
         BorderImage:
-            border: (0, 0, 0, 0)
-            pos: (self.x, self.center_y - 1)
-            size: (78, 5)
+            border: 0, 0, 0, 0
+            pos: int(self.x), int(self.center_y - 1)
+            size: 78, 5
             source: 'images/MainVolumeSliderTrack.tiff'
         Rectangle:
-            pos: (self.value_pos[0] - 7, self.center_y - 7)
-            size: (14, 14)
+            pos: int(self.value_pos[0] - 7), int(self.center_y - 7)
+            size: 14, 14
             source: 'images/MainVolumeSliderKnob.tiff' if self.state == 'normal' else 'images/MainVolumeSliderKnobPressed.tiff'
 
 <VolumePanel>:
-    orientation: 'horizontal'
-    spacing: 2
-    size: (18 + 78 + root.spacing, 45)
+    size: 102, 51
     slider: slider
 
     Button:
-        pos_hint: {'center_y':.7}
-        size_hint: (None, None)
-        size: (18, 17)
-        border: (0, 0, 0, 0)
+        pos: 4, 29
+        size_hint: None, None
+        size: 18, 17
+        border: 0, 0, 0, 0
         background_normal: 'images/MainVolumeMute.tiff' if root.muted or slider.value_normalized == 0 else 'images/MainVolume1.tiff' if slider.value_normalized < .33 else 'images/MainVolume2.tiff' if slider.value_normalized < .66 else 'images/MainVolume3.tiff'
         background_down: 'images/MainVolumeMute.tiff' if root.muted or slider.value_normalized == 0 else 'images/MainVolume1.tiff' if slider.value_normalized < .33 else 'images/MainVolume2.tiff' if slider.value_normalized < .66 else 'images/MainVolume3.tiff'
         on_press: root._press_muted()
 
     VolumeSlider:
         id: slider
-        pos_hint: {'center_y':.7}
-        size_hint: (None, None)
-        size: (78, 5)
+        pos: 24, 35
+        size_hint: None, None
+        size: 78, 5
 ''')
 
 
@@ -130,7 +128,7 @@ class VolumeSlider(Widget):
             return True
 
 
-class VolumePanel(BoxLayout):
+class VolumePanel(RelativeLayout):
     video  = ObjectProperty(None)
     muted  = BooleanProperty(False)
     slider = ObjectProperty(None)

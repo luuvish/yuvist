@@ -20,8 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from kivy.lang import Builder
-from kivy.properties import (ObjectProperty, OptionProperty, ListProperty)
+from kivy.properties import ObjectProperty, OptionProperty, ListProperty
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.popup import Popup
 from kivy.uix.button import Button
 
@@ -52,6 +53,13 @@ Builder.load_string('''
         Rectangle:
             size: self.size
             pos: self.pos
+
+<ResolutionOption>:
+    size_hint_y: None
+    height: 40
+
+<ResolutionDropDown>:
+    max_height: 200
 
 <ResolutionPanel>:
     orientation: 'vertical'
@@ -205,38 +213,34 @@ Builder.load_string('''
         orientation: 'vertical'
 
 <ConfigPanel>:
-    orientation: 'horizontal'
-    spacing: 4
-    size: (20*2 + root.spacing, 45)
+    size: 46, 51
 
     Button:
-        pos_hint: {'center_y':.7}
-        size_hint: (None, None)
-        size: (20, 18)
-        border: (0, 0, 0, 0)
+        pos: 0, 28
+        size_hint: None, None
+        size: 20, 18
+        border: 0, 0, 0, 0
         background_normal: 'images/MainControlPanel.tiff'
         background_down: 'images/MainControlPanelHover.tiff'
-        on_press: root._imagesize()
+        on_press: root._resolution()
 
     Button:
-        pos_hint: {'center_y':.7}
-        size_hint: (None, None)
-        size: (20, 18)
-        border: (0, 0, 0, 0)
+        pos: 24, 28
+        size_hint: None, None
+        size: 20, 18
+        border: 0, 0, 0, 0
         background_normal: 'images/MainPlaylist.tiff'
         background_down: 'images/MainPlaylistHover.tiff'
         on_press: root._playlist()
 ''')
 
 
-class ResButton(Button):
-    def __init__(self, **kwargs):
-        super(ResButton, self).__init__(size_hint_y=None, height=40, **kwargs)
+class ResolutionOption(Button):
+    pass
 
 
-class ResDropDown(DropDown):
-    def __init__(self, **kwargs):
-        super(ResDropDown, self).__init__(max_height=200, **kwargs)
+class ResolutionDropDown(DropDown):
+    pass
 
 
 class ResolutionPanel(BoxLayout):
@@ -280,8 +284,8 @@ class ResolutionPanel(BoxLayout):
         ((8192, 4320), '8192x4320')
     )
 
-    option_cls   = ObjectProperty(ResButton)
-    dropdown_cls = ObjectProperty(ResDropDown)
+    option_cls   = ObjectProperty(ResolutionOption)
+    dropdown_cls = ObjectProperty(ResolutionDropDown)
 
     format     = OptionProperty('yuv', options=('yuv', 'yuv400', 'yuv420',
                                                 'yuv422', 'yuv422v', 'yuv444'))
@@ -300,7 +304,7 @@ class PlaylistPanel(BoxLayout):
     pass
 
 
-class ConfigPanel(BoxLayout):
+class ConfigPanel(RelativeLayout):
     video = ObjectProperty(None)
     state = OptionProperty('stop', options=('play', 'pause', 'stop'))
 
@@ -310,7 +314,7 @@ class ConfigPanel(BoxLayout):
     def on_video(self, instance, value):
         self.video.bind(state=self.setter('state'))
 
-    def _imagesize(self):
+    def _resolution(self):
         popup = None
         def confirm(format, resolution):
             self.video.resolution = resolution

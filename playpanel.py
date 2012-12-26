@@ -20,17 +20,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from kivy.lang import Builder
-from kivy.properties import (StringProperty, ObjectProperty, OptionProperty)
-from kivy.uix.boxlayout import BoxLayout
+from kivy.properties import StringProperty, ObjectProperty, OptionProperty
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.relativelayout import RelativeLayout
 
 
 Builder.load_string('''
 <OpenDialog>:
     BoxLayout:
-        size: root.size
-        pos: root.pos
         orientation: 'vertical'
+        pos: root.pos
+        size: root.size
 
         FileChooserListView:
             id: filechooser
@@ -50,50 +50,48 @@ Builder.load_string('''
                 on_release: root.open(filechooser.path, filechooser.selection)
 
 <PlayPanel>:
-    orientation: 'horizontal'
-    spacing: 8
-    size: (45 + (20+18)*2 + root.spacing*4, 45)
+    size: 153+1, 51
 
     Button:
-        pos_hint: {'center_y':.5}
-        size_hint: (None, None)
-        size: (20, 18)
-        border: (0, 0, 0, 0)
+        pos: 0, 18
+        size_hint: None, None
+        size: 20, 18
+        border: 0, 0, 0, 0
         background_normal: 'images/MainPrevMovie.tiff'
         background_down: 'images/MainPrevMovieHover.tiff'
         on_press: root._prev_movie()
 
     Button:
-        pos_hint: {'center_y':.5}
-        size_hint: (None, None)
-        size: (18, 18)
-        border: (0, 0, 0, 0)
+        pos: 28, 19
+        size_hint: None, None
+        size: 18, 18
+        border: 0, 0, 0, 0
         background_normal: 'images/MainPrevSeek.tiff'
         background_down: 'images/MainPrevSeekHover.tiff'
         on_press: root._prev_seek()
 
     Button:
-        pos_hint: {'center_y':.5}
-        size_hint: (None, None)
-        size: (45, 45)
+        pos: 54, 6
+        size_hint: None, None
+        size: 45, 45
         background_normal: 'images/MainPause.tiff' if root.state == 'play' else 'images/MainPlay.tiff'
         background_down: 'images/MainPausePressed.tiff' if root.state == 'play' else 'images/MainPlayPressed.tiff'
         on_press: root._play_pause()
 
     Button:
-        pos_hint: {'center_y':.5}
-        size_hint: (None, None)
-        size: (18, 18)
-        border: (0, 0, 0, 0)
+        pos: 107, 19
+        size_hint: None, None
+        size: 18, 18
+        border: 0, 0, 0, 0
         background_normal: 'images/MainNextSeek.tiff'
         background_down: 'images/MainNextSeekHover.tiff'
         on_press: root._next_seek()
 
     Button:
-        pos_hint: {'center_y':.5}
-        size_hint: (None, None)
-        size: (20, 18)
-        border: (0, 0, 0, 0)
+        pos: 133, 19
+        size_hint: None, None
+        size: 20, 18
+        border: 0, 0, 0, 0
         background_normal: 'images/MainNextMovie.tiff'
         background_down: 'images/MainNextMovieHover.tiff'
         on_press: root._next_movie()
@@ -101,12 +99,12 @@ Builder.load_string('''
 
 
 class OpenDialog(FloatLayout):
-    path = StringProperty('.')
-    open = ObjectProperty(None)
+    path   = StringProperty('.')
+    open   = ObjectProperty(None)
     cancel = ObjectProperty(None)
 
 
-class PlayPanel(BoxLayout):
+class PlayPanel(RelativeLayout):
     video = ObjectProperty(None)
     state = OptionProperty('stop', options=('play', 'pause', 'stop'))
 
@@ -119,7 +117,7 @@ class PlayPanel(BoxLayout):
     def _play_pause(self):
         if not self.video.source:
             popup = None
-            def ok(path, selected):
+            def open(path, selected):
                 if len(selected) > 0:
                     import os
                     self.video.source = os.path.join(path, selected[0])
@@ -131,7 +129,7 @@ class PlayPanel(BoxLayout):
             from kivy.core.window import Window
             size = Window.size[0] - 160, Window.size[1] - 100
             popup = Popup(title='Open Image File',
-                          content=OpenDialog(open=ok, cancel=submit),
+                          content=OpenDialog(open=open, cancel=submit),
                           size_hint=(None, None), size=size)
             popup.open()
             return

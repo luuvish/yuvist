@@ -44,36 +44,36 @@ Builder.load_string('''
     GridLayout:
         cols: 1
         size_hint_y: None
-        height: 58
+        height: 62
 
         canvas:
             Color:
-                hsv: 0, 0, .8
+                hsv: 0, 0, .85
             Rectangle:
                 size: self.size
                 pos: self.pos
 
         SeekPanel:
             size_hint_y: None
-            height: 13
+            height: 11
             video: root
 
         FloatLayout:
             size_hint_y: None
-            height: 45
+            height: 51
 
             VolumePanel:
-                x: root.x + 8
+                x: root.x
                 size_hint: None, None
                 video: root
 
             PlayPanel:
-                pos_hint: {'center_x':.5}
+                center_x: int(root.center_x)
                 size_hint: None, None
                 video: root
 
             ConfigPanel:
-                right: root.right - 8
+                right: root.right
                 size_hint: None, None
                 video: root
 ''')
