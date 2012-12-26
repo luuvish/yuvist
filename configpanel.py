@@ -23,6 +23,9 @@ from kivy.lang import Builder
 from kivy.properties import (ObjectProperty, OptionProperty, ListProperty)
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
+from kivy.uix.button import Button
+
+from dropdown import DropDown
 
 
 Builder.load_string('''
@@ -73,6 +76,8 @@ Builder.load_string('''
                         pos: self.pos
 
             Spinner:
+                option_cls: root.option_cls
+                dropdown_cls: root.dropdown_cls
                 pos_hint: {'center_x':.5, 'center_y':.6}
                 size_hint: (.8, None)
                 height: 40
@@ -82,31 +87,43 @@ Builder.load_string('''
 
             GridLayout:
                 rows: 2
-                cols: 2
+                cols: 3
                 pos_hint: {'center_x':.5, 'center_y':.35}
                 size_hint_y: None
                 height: 40
 
                 TextInput:
-                    size_hint: (.3, None)
+                    size_hint: (.27, None)
                     height: 40
+                    padding: (6, 12)
+                    multiline: False
                     text: str(root.resolution[0])
-                    on_text: root.resolution[0] = int(self.text)
+                    on_text: if root._check_resolution_range(self.text, min=1, max=8192): root.resolution[0] = int(self.text)
+                Widget:
+                    size_hint: (.03, None)
+                    height: 40
                 Slider:
                     size_hint: (.7, None)
                     height: 40
+                    min: 1
                     max: 8192
                     value: root.resolution[0]
                     step: 1
                     on_value: root.resolution[0] = int(self.value)
                 TextInput:
-                    size_hint: (.3, None)
+                    size_hint: (.27, None)
                     height: 40
+                    padding: (6, 12)
+                    multiline: False
                     text: str(root.resolution[1])
-                    on_text: root.resolution[1] = int(self.text)
+                    on_text: if root._check_resolution_range(self.text, min=1, max=4320): root.resolution[1] = int(self.text)
+                Widget:
+                    size_hint: (.03, None)
+                    height: 40
                 Slider:
                     size_hint: (.7, None)
                     height: 40
+                    min: 1
                     max: 4320
                     value: root.resolution[1]
                     step: 1
@@ -212,6 +229,16 @@ Builder.load_string('''
 ''')
 
 
+class ResButton(Button):
+    def __init__(self, **kwargs):
+        super(ResButton, self).__init__(size_hint_y=None, height=40, **kwargs)
+
+
+class ResDropDown(DropDown):
+    def __init__(self, **kwargs):
+        super(ResDropDown, self).__init__(max_height=200, **kwargs)
+
+
 class ResolutionPanel(BoxLayout):
 
     RESOLUTION_LIST = (
@@ -253,11 +280,20 @@ class ResolutionPanel(BoxLayout):
         ((8192, 4320), '8192x4320')
     )
 
+    option_cls   = ObjectProperty(ResButton)
+    dropdown_cls = ObjectProperty(ResDropDown)
+
     format     = OptionProperty('yuv', options=('yuv', 'yuv400', 'yuv420',
                                                 'yuv422', 'yuv422v', 'yuv444'))
     resolution = ListProperty([0, 0])
     confirm    = ObjectProperty(None)
     cancel     = ObjectProperty(None)
+
+    def _check_resolution_range(self, value, min=1, max=8192):
+        try:
+            return min <= int(value) <= max
+        except ValueError:
+            return False
 
 
 class PlaylistPanel(BoxLayout):
