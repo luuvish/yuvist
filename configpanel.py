@@ -50,9 +50,8 @@ Builder.load_string('''
             size: self.size
             pos: self.pos
 
-<ImageSizePanel>:
+<ResolutionPanel>:
     orientation: 'vertical'
-    spinner: spinner
 
     BoxLayout:
         orientation: 'horizontal'
@@ -74,10 +73,12 @@ Builder.load_string('''
                         pos: self.pos
 
             Spinner:
-                id: spinner
                 pos_hint: {'center_x':.5, 'center_y':.6}
                 size_hint: (.8, None)
                 height: 40
+                values: ('%dx%d' % res for res, name in root.RESOLUTION_LIST)
+                text: '%dx%d' % tuple(root.resolution)
+                on_text: root.resolution = map(int, self.text.split('x'))
 
             GridLayout:
                 rows: 2
@@ -143,7 +144,7 @@ Builder.load_string('''
                 ToggleButton:
                     text: '4:2:0'
                     group: 'chroma'
-                    state: 'down' if root.format == 'yuv420' else 'normal'
+                    state: 'down' if root.format in ('yuv', 'yuv420') else 'normal'
                     on_press: root.format = 'yuv420'
                 ToggleButton:
                     text: '4:2:2'
@@ -174,8 +175,8 @@ Builder.load_string('''
             text: 'Cancel'
             on_press: root.cancel()
         Button:
-            text: 'Ok'
-            on_press: root.ok(root.format, root.resolution)
+            text: 'Confirm'
+            on_press: root.confirm(root.format, root.resolution)
 
 <PlaylistPanel>:
     cols: 2
@@ -211,9 +212,9 @@ Builder.load_string('''
 ''')
 
 
-class ImageSizePanel(BoxLayout):
+class ResolutionPanel(BoxLayout):
 
-    resolutions = (
+    RESOLUTION_LIST = (
         (( 128,   96), 'SQCIF'),
         (( 176,  144), 'QCIF'),
         (( 320,  240), 'QVGA'),
@@ -252,30 +253,11 @@ class ImageSizePanel(BoxLayout):
         ((8192, 4320), '8192x4320')
     )
 
-    spinner    = ObjectProperty(None)
-    input_w    = ObjectProperty(None)
-    input_h    = ObjectProperty(None)
-    slider_w   = ObjectProperty(None)
-    slider_h   = ObjectProperty(None)
-
     format     = OptionProperty('yuv', options=('yuv', 'yuv400', 'yuv420',
                                                 'yuv422', 'yuv422v', 'yuv444'))
     resolution = ListProperty([0, 0])
-    ok         = ObjectProperty(None)
+    confirm    = ObjectProperty(None)
     cancel     = ObjectProperty(None)
-
-    def __init__(self, **kwargs):
-        super(ImageSizePanel, self).__init__(**kwargs)
-
-        if self.format == 'yuv':
-            self.format = 'yuv420'
-
-        def show_selected_value(spinner, text):
-            self.resolution = map(int, text.split('x'))
-
-        self.spinner.values = ('%dx%d' % res for res, name in self.resolutions)
-        self.spinner.text = '%dx%d' % tuple(self.resolution)
-        self.spinner.bind(text=show_selected_value)
 
 
 class PlaylistPanel(BoxLayout):
@@ -294,17 +276,16 @@ class ConfigPanel(BoxLayout):
 
     def _imagesize(self):
         popup = None
-        def ok(format, resolution):
-            print 'resolution %s, format %s' % (resolution, format)
+        def confirm(format, resolution):
             self.video.resolution = resolution
             self.video.format = format
             popup.dismiss()
         def cancel():
             popup.dismiss()
         popup = Popup(title='Configuration YUV image',
-                      content=ImageSizePanel(resolution=self.video.resolution,
-                                             format=self.video.format,
-                                             ok=ok, cancel=cancel),
+                      content=ResolutionPanel(resolution=self.video.resolution,
+                                              format=self.video.format,
+                                              confirm=confirm, cancel=cancel),
                       size_hint=(None, None), size=(400, 400))
         popup.open()
 

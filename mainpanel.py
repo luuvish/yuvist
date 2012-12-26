@@ -100,6 +100,7 @@ class MainPanel(GridLayout):
         self._image = None
         super(MainPanel, self).__init__(**kwargs)
 
+        self.bind(source=self._image_init, format=self._image_init, resolution=self._image_init)
         if self.source:
             self._trigger_image_load()
 
@@ -107,12 +108,6 @@ class MainPanel(GridLayout):
         if not self._image:
             return
         self._image.seek(percent)
-
-    def on_source(self, instance, value):
-        if not self.container:
-            return
-        self.container.clear_widgets()
-        self._trigger_image_load()
 
     def on_state(self, instance, value):
         if self._image is None:
@@ -128,6 +123,12 @@ class MainPanel(GridLayout):
         if not self._image:
             return
         self._image.volume = value
+
+    def _image_init(self, *largs):
+        if not self.container:
+            return
+        self.container.clear_widgets()
+        self._trigger_image_load()
 
     def _trigger_image_load(self, *largs):
         Clock.unschedule(self._image_load)

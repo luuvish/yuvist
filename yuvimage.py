@@ -87,7 +87,7 @@ class YuvImage(Image):
     fs = StringProperty(None)
 
     format     = OptionProperty('yuv', options=('yuv', 'yuv400', 'yuv420',
-                                                'yuv422', 'yuv224', 'yuv444'))
+                                                'yuv422', 'yuv422v', 'yuv444'))
     resolution = ListProperty([0, 0])
     texture1   = ObjectProperty(None, allownone=True)
     texture2   = ObjectProperty(None, allownone=True)
