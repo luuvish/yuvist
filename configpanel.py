@@ -204,13 +204,24 @@ Builder.load_string('''
             on_press: root.confirm(root.format, root.resolution)
 
 <PlaylistPanel>:
-    cols: 2
+    orientation: 'vertical'
+    layout: layout
 
-    BoxLayout:
-        orientation: 'vertical'
+    GridLayout:
+        id: layout
+        cols: 3
 
-    BoxLayout:
-        orientation: 'vertical'
+    GridLayout:
+        size_hint_y: None
+        height: 32
+        cols: 2
+
+        Button:
+            text: 'Cancel'
+            on_press: root.cancel()
+        Button:
+            text: 'Confirm'
+            on_press: root.confirm(root.selection)
 
 <ConfigPanel>:
     size: 46, 51
@@ -287,8 +298,8 @@ class ResolutionPanel(BoxLayout):
     option_cls   = ObjectProperty(ResolutionOption)
     dropdown_cls = ObjectProperty(ResolutionDropDown)
 
-    format     = OptionProperty('yuv', options=('yuv', 'yuv400', 'yuv420',
-                                                'yuv422', 'yuv422v', 'yuv444'))
+    format     = OptionProperty('yuv420', options=('yuv400', 'yuv420',
+                                                   'yuv422', 'yuv422v', 'yuv444'))
     resolution = ListProperty([0, 0])
     confirm    = ObjectProperty(None)
     cancel     = ObjectProperty(None)
@@ -301,24 +312,64 @@ class ResolutionPanel(BoxLayout):
 
 
 class PlaylistPanel(BoxLayout):
-    pass
+    playlist  = ListProperty([])
+    confirm   = ObjectProperty(None)
+    cancel    = ObjectProperty(None)
+    layout    = ObjectProperty(None)
+    selection = ListProperty([])
+
+    def __init__(self, **kwargs):
+        super(PlaylistPanel, self).__init__(**kwargs)
+
+        from kivy.adapters.dictadapter import DictAdapter
+        from kivy.uix.listview import ListItemButton, CompositeListItem, ListView
+        import os
+        integers_dict = {
+            str(i): {'source': os.path.basename(self.playlist[i]['source']),
+                     'format': self.playlist[i]['format'],
+                     'resolution': '%dx%d' % tuple(self.playlist[i]['resolution']),
+                     'playlist': self.playlist[i],
+                     'is_selected': False} for i in xrange(len(self.playlist))
+        }
+        args_converter = lambda row_index, rec: {
+            'text': rec['source'],
+            'size_hint_y': None,
+            'height': 25,
+            'cls_dicts': [
+                {'cls': ListItemButton,
+                 'kwargs': {'text': rec['source']}},
+                {'cls': ListItemButton,
+                 'kwargs': {'text': rec['resolution'],
+                            'size_hint_x': None, 'width': 100}},
+                {'cls': ListItemButton,
+                 'kwargs': {'text': rec['format'],
+                            'size_hint_x': None, 'width': 70}}
+            ]
+        }
+        item_strings = ["{0}".format(index) for index in xrange(len(self.playlist))]
+        dict_adapter = DictAdapter(sorted_keys=item_strings,
+                                   data=integers_dict,
+                                   args_converter=args_converter,
+                                   selection_mode='single',
+                                   allow_empty_selection=False,
+                                   cls=CompositeListItem)
+        dict_adapter.bind(selection=self.setter('selection'))
+        list_view = ListView(adapter=dict_adapter)
+        self.layout.add_widget(list_view)
 
 
 class ConfigPanel(RelativeLayout):
     video = ObjectProperty(None)
-    state = OptionProperty('stop', options=('play', 'pause', 'stop'))
 
     def __init__(self, **kwargs):
         super(ConfigPanel, self).__init__(**kwargs)
 
-    def on_video(self, instance, value):
-        self.video.bind(state=self.setter('state'))
-
     def _resolution(self):
         popup = None
         def confirm(format, resolution):
-            self.video.resolution = resolution
             self.video.format = format
+            self.video.resolution = resolution
+            self.video.state = 'play'
             popup.dismiss()
         def cancel():
             popup.dismiss()
@@ -331,12 +382,20 @@ class ConfigPanel(RelativeLayout):
 
     def _playlist(self):
         popup = None
-        def submit(instance, selected, touch=None):
-            self.video.source = selected[0]
-            self.video.state = 'play'
+        def confirm(selection):
+            if selection:
+                index = selection[0].index
+                playlist = self.video.playlist
+                if 0 <= index < len(playlist):
+                    self.video.source = playlist[index]['source']
+                    self.video.format = playlist[index]['format']
+                    self.video.resolution = playlist[index]['resolution']
+                    self.video.state = 'play'
             popup.dismiss()
-        from kivy.uix.label import Label
-        popup = Popup(title='Open Image File',
-                      content=Label(text='play list'),
-                      size_hint=(None, None), size=(400, 400))
+        def cancel():
+            popup.dismiss()
+        popup = Popup(title='PlayList YUV Image File',
+                      content=PlaylistPanel(playlist=self.video.playlist,
+                                            confirm=confirm, cancel=cancel),
+                      size_hint=(None, None), size=(700, 500))
         popup.open()

@@ -48,7 +48,7 @@ Builder.load_string('''
 
         canvas:
             Color:
-                hsv: 0, 0, .85
+                hsv: 0, 0, .8
             Rectangle:
                 size: self.size
                 pos: self.pos
@@ -81,8 +81,8 @@ Builder.load_string('''
 
 class MainPanel(GridLayout):
     source     = StringProperty('')
-    format     = OptionProperty('yuv', options=('yuv', 'yuv400', 'yuv420',
-                                                'yuv422', 'yuv422v', 'yuv444'))
+    format     = OptionProperty('yuv420', options=('yuv400', 'yuv420',
+                                                   'yuv422', 'yuv422v', 'yuv444'))
     resolution = ListProperty([1920, 1080])
 
     duration   = NumericProperty(-1)
@@ -135,17 +135,15 @@ class MainPanel(GridLayout):
         Clock.schedule_once(self._image_load, -1)
 
     def _image_load(self, *largs):
-        if self._image:
+        if self._image is not None:
             self._image.state = 'stop'
-        if not self.source:
-            if self._image is not None:
-                self._image.unbind(texture=self._play_started,
-                                   state=self.setter('state'),
-                                   duration=self.setter('duration'),
-                                   position=self.setter('position'),
-                                   volume=self.setter('volume'))
+            self._image.unbind(texture=self._play_started,
+                               state=self.setter('state'),
+                               duration=self.setter('duration'),
+                               position=self.setter('position'),
+                               volume=self.setter('volume'))
             self._image = None
-        else:
+        if self.source:
             from kivy.resources import resource_find
             filename = resource_find(self.source)
             if filename is None:
@@ -154,16 +152,10 @@ class MainPanel(GridLayout):
                 from yuvimage import YuvImage as CoreImage
             else:
                 from kivy.uix.video import Video as CoreImage
-            if self._image is not None:
-                self._image.unbind(texture=self._play_started,
-                                   state=self.setter('state'),
-                                   duration=self.setter('duration'),
-                                   position=self.setter('position'),
-                                   volume=self.setter('volume'))
             self._image = CoreImage(source=filename,
                                     format=self.format,
                                     resolution=self.resolution,
-                                    state='stop',
+                                    state=self.state,
                                     volume=self.volume,
                                     pos_hint={'x':0, 'y':0},
                                     **self.options)
@@ -173,10 +165,28 @@ class MainPanel(GridLayout):
                              position=self.setter('position'),
                              volume=self.setter('volume'))
             self._image.state = self.state
+            self._update_playlist()
 
     def _play_started(self, instance, value):
         self.container.clear_widgets()
         self.container.add_widget(self._image)
+
+    def _update_playlist(self):
+        from kivy.core.window import Window
+        import os
+        info = '%dx%d' % tuple(self.resolution) + '@' + self.format
+        Window.title = '%s %s' % (os.path.basename(self.source), info)
+
+        playlist = self.playlist[:]
+        for play in playlist:
+            if play['source'] == self.source:
+                play['format'] = self.format
+                play['resolution'] = self.resolution
+                return
+        playlist.append({'source': self.source,
+                         'format': self.format,
+                         'resolution': self.resolution})
+        self.playlist = playlist
 
 
 if __name__ == '__main__':

@@ -55,7 +55,6 @@ _init()
 class YuvFile(EventDispatcher):
 
     chroma = {
-        'yuv'    : (2,2),
         'yuv400' : (1,1),
         'yuv420' : (2,2),
         'yuv422' : (1,2),
@@ -66,8 +65,8 @@ class YuvFile(EventDispatcher):
     copy_attributes = ('_size', '_filename', '_texture', '_image')
 
     filename = StringProperty(None)
-    format   = OptionProperty('yuv', options=('yuv', 'yuv400', 'yuv420',
-                                              'yuv422', 'yuv422v', 'yuv444'))
+    format   = OptionProperty('yuv420', options=('yuv400', 'yuv420',
+                                                 'yuv422', 'yuv422v', 'yuv444'))
     width    = NumericProperty(0)
     height   = NumericProperty(0)
     size     = ReferenceListProperty(width, height)

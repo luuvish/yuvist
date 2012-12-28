@@ -23,6 +23,7 @@ from kivy.lang import Builder
 from kivy.properties import StringProperty, ObjectProperty, OptionProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.relativelayout import RelativeLayout
+from kivy.core.window import Window
 
 
 Builder.load_string('''
@@ -111,6 +112,11 @@ class PlayPanel(RelativeLayout):
     def __init__(self, **kwargs):
         super(PlayPanel, self).__init__(**kwargs)
 
+        Window.bind(on_dropfile=self._dropfile)
+
+        self._keyboard = Window.request_keyboard(self._keyboard_closed, Window)
+        self._keyboard.bind(on_key_down=self._on_keyboard_down)
+
     def on_video(self, instance, value):
         self.video.bind(state=self.setter('state'))
 
@@ -143,26 +149,28 @@ class PlayPanel(RelativeLayout):
     def _prev_movie(self):
         if not self.video.source:
             return
-        try:
-            playlist = self.video.playlist
-            i = playlist.index(self.video.source)
-            if i > 0:
-                self.video.source = playlist[i-1]
-                self.video.state = 'play'
-        except ValueError:
-            pass
+        playlist = self.video.playlist
+        for i in xrange(len(playlist)):
+            if playlist[i]['source'] == self.video.source:
+                if i > 0:
+                    self.video.source = playlist[i-1]['source']
+                    self.video.format = playlist[i-1]['format']
+                    self.video.resolution = playlist[i-1]['resolution']
+                    self.video.state = 'play'
+                    return
 
     def _next_movie(self):
         if not self.video.source:
             return
-        try:
-            playlist = self.video.playlist
-            i = playlist.index(self.video.source)
-            if i < len(playlist):
-                self.video.source = playlist[i+1]
-                self.video.state = 'play'
-        except ValueError:
-            pass
+        playlist = self.video.playlist
+        for i in xrange(len(playlist)):
+            if playlist[i]['source'] == self.video.source:
+                if i < len(playlist)-1:
+                    self.video.source = playlist[i+1]['source']
+                    self.video.format = playlist[i+1]['format']
+                    self.video.resolution = playlist[i+1]['resolution']
+                    self.video.state = 'play'
+                    return
 
     def _prev_seek(self):
         if self.video.duration == 0:
@@ -175,3 +183,55 @@ class PlayPanel(RelativeLayout):
             return
         seek = (self.video.position + 1) / float(self.video.duration)
         self.video.seek(seek)
+
+    def _keyboard_closed(self):
+        self._keyboard.unbind(on_key_down=self._on_keyboard_down)
+        self._keyboard = None
+
+    def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
+        if keycode == (111, 'o') and 'meta' in modifiers:
+            popup = None
+            def open(path, selected):
+                if len(selected) > 0:
+                    import os
+                    self.video.source = os.path.join(path, selected[0])
+                    self.video.state = 'play'
+                popup.dismiss()
+            def submit():
+                popup.dismiss()
+            from kivy.uix.popup import Popup
+            from kivy.core.window import Window
+            size = Window.size[0] - 160, Window.size[1] - 100
+            popup = Popup(title='Open Image File',
+                          content=OpenDialog(open=open, cancel=submit),
+                          size_hint=(None, None), size=size)
+            popup.open()
+            return True
+        if keycode == (49, '1') and 'meta' in modifiers:
+            return self._resize(size_hint=(0.5, 0.5))
+        if keycode == (50, '2') and 'meta' in modifiers:
+            return self._resize(size_hint=(1.0, 1.0))
+        if keycode == (51, '3') and 'meta' in modifiers:
+            return self._resize(size_hint=(1.5, 1.5))
+        if keycode == (52, '4') and 'meta' in modifiers:
+            return self._resize(size_hint=(2.0, 2.0))
+        return True
+
+    def _resize(self, size_hint=(1., 1.)):
+        window = self.get_root_window()
+        size   = self.video.resolution
+        ratio  = size[0] / float(size[1])
+        w, h   = 1920, 1080 #window._size
+        tw, th = int(size[0] * size_hint[0]), int(size[1] * size_hint[1]) + 62
+        iw = min(w, tw)
+        ih = iw / ratio
+        if ih > h:
+            ih = min(h, th)
+            iw = ih * ratio
+        window.size = int(iw), int(ih)
+        return True
+
+    def _dropfile(filename):
+        print 'dropfile %s' % filename
+        self.video.source = filename
+        self.video.state = 'play'
