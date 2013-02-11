@@ -27,10 +27,10 @@ from kivy.properties import (ObjectProperty, StringProperty,
                              DictProperty, OptionProperty)
 from kivy.uix.gridlayout import GridLayout
 
-from uix.seek   import Seek
-from uix.volume import Volume
-from uix.play   import Play
-from uix.config import Config
+from .seek   import Seek
+from .volume import Volume
+from .play   import Play
+from .config import Config
 
 
 Builder.load_string('''
@@ -150,7 +150,7 @@ class Front(GridLayout):
             if filename is None:
                 return
             if filename.lower().endswith('.yuv'):
-                from yuvist.core.image.image import YuvImage as Image
+                from core.image.image import YuvImage as Image
             else:
                 from kivy.uix.video import Video as Image
             self._image = Image(source=filename,

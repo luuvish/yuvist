@@ -26,7 +26,7 @@ from kivy.properties import (StringProperty, ObjectProperty, ListProperty,
                              BooleanProperty, NumericProperty, OptionProperty)
 from kivy.uix.image import Image
 
-from yuvist.core.image.file import File
+from .file import File
 
 
 Builder.load_string('''
