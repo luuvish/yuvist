@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """\
@@ -19,6 +18,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+__all__ = ('Seek', )
+
 from kivy.lang import Builder
 from kivy.properties import (ObjectProperty, NumericProperty, StringProperty)
 from kivy.animation import Animation
@@ -28,7 +29,7 @@ from kivy.uix.boxlayout import BoxLayout
 
 
 Builder.load_string('''
-<SeekPanel>:
+<Seek>:
     orientation: 'horizontal'
     height: 13
 
@@ -131,7 +132,7 @@ class SeekBar(ProgressBar):
             self._show_bubble()
 
 
-class SeekPanel(BoxLayout):
+class Seek(BoxLayout):
     video    = ObjectProperty(None)
     duration = NumericProperty(-1)
     position = NumericProperty(0)
@@ -139,7 +140,7 @@ class SeekPanel(BoxLayout):
     rseek    = StringProperty('00:00:00')
 
     def __init__(self, **kwargs):
-        super(SeekPanel, self).__init__(**kwargs)
+        super(Seek, self).__init__(**kwargs)
 
     def on_video(self, instance, value):
         self.video.bind(position=self._update_seek, duration=self._update_seek)

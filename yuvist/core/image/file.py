@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """\
@@ -19,6 +18,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+__all__ = ('File', )
+
 import os
 from kivy.clock import Clock
 from kivy.event import EventDispatcher
@@ -35,7 +36,8 @@ VP8kVToR      = [0] * 256
 VP8kUToB      = [0] * 256
 VP8kVToG      = [0] * 256
 VP8kUToG      = [0] * 256
-VP8kClip      = [0] * (YUV_RANGE_MAX - YUV_RANGE_MIN);
+VP8kClip      = [0] * (YUV_RANGE_MAX - YUV_RANGE_MIN)
+
 
 def _init():
     for i in xrange(256):
@@ -52,7 +54,7 @@ def _init():
 _init()
 
 
-class YuvFile(EventDispatcher):
+class File(EventDispatcher):
 
     chroma = {
         'yuv400' : (1,1),
@@ -88,20 +90,11 @@ class YuvFile(EventDispatcher):
         self._buffer_lock = Lock()
         self._buffer = None
 
-        super(YuvFile, self).__init__(**kwargs)
+        super(File, self).__init__(**kwargs)
 
         self.format   = kwargs.get('format', 'yuv')
         self.size     = kwargs.get('size', [0, 0])
         self.filename = arg
-        return
-
-        if isinstance(arg, YuvFile):
-            for attr in YuvFile.copy_attributes:
-                self.__setattr__(attr, arg.__getattribute__(attr))
-        elif isinstance(arg, basestring):
-            self.filename = arg
-        else:
-            raise Exception('Unable to load image type %s' % str(type(arg)))
 
     def play(self):
         Clock.unschedule(self._update_glsl)
@@ -176,9 +169,9 @@ class YuvFile(EventDispatcher):
             raise Exception("Can't open file %s" % filename)
         filesize = os.path.getsize(filename)
 
-        if format not in YuvFile.chroma:
+        if format not in self.chroma:
             raise Exception("Not support chroma format")
-        subpixel = YuvFile.chroma[format]
+        subpixel = self.chroma[format]
         ysize = size
         csize = size[0] // subpixel[0], size[1] // subpixel[1]
         ybyte = ysize[0] * ysize[1]
@@ -187,7 +180,7 @@ class YuvFile(EventDispatcher):
         self.image = {
             'file'    : fp,
             'filesize': filesize,
-            'subpixel': YuvFile.chroma[format],
+            'subpixel': self.chroma[format],
             'size'    : (ysize, csize),
             'byte'    : (ybyte, cbyte, ybyte + cbyte * 2)
         }

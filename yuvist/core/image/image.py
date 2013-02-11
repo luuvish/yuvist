@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """\
@@ -19,13 +18,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+__all__ = ('YuvImage', )
+
 from kivy.lang import Builder
 from kivy.clock import Clock
 from kivy.properties import (StringProperty, ObjectProperty, ListProperty,
                              BooleanProperty, NumericProperty, OptionProperty)
 from kivy.uix.image import Image
 
-from yuvfile import YuvFile
+from yuvist.core.image.file import File
 
 
 Builder.load_string('''
@@ -176,7 +177,7 @@ class YuvImage(Image):
                 return
             if self._image is not None:
                 self._image.unbind(on_texture=self._on_tex_change)
-            self._image = ci = YuvFile(filename, format=self.format, size=self.resolution)
+            self._image = ci = File(filename, format=self.format, size=self.resolution)
             self._image.volume = self.volume
             ci.bind(on_texture=self._on_tex_change, on_eos=self._on_eos)
             if self.state == 'play' or self.play:
@@ -199,8 +200,8 @@ class YuvImage(Image):
 
 
 if __name__ == '__main__':
-    from kivy.app import App
     import sys
+    from kivy.app import App
 
     if len(sys.argv) != 2:
         print "usage: %s file" % sys.argv[0]

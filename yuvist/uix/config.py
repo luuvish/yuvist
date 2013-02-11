@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """\
@@ -19,14 +18,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+__all__ = ('Config', )
+
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty, OptionProperty, ListProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.popup import Popup
 from kivy.uix.button import Button
-
-from dropdown import DropDown
+from kivy.uix.dropdown import DropDown
 
 
 Builder.load_string('''
@@ -61,7 +61,7 @@ Builder.load_string('''
 <ResolutionDropDown>:
     max_height: 200
 
-<ResolutionPanel>:
+<Resolution>:
     orientation: 'vertical'
 
     BoxLayout:
@@ -203,7 +203,7 @@ Builder.load_string('''
             text: 'Confirm'
             on_press: root.confirm(root.format, root.resolution)
 
-<PlaylistPanel>:
+<Playlist>:
     orientation: 'vertical'
     layout: layout
 
@@ -223,7 +223,7 @@ Builder.load_string('''
             text: 'Confirm'
             on_press: root.confirm(root.selection)
 
-<ConfigPanel>:
+<Config>:
     size: 46, 51
 
     Button:
@@ -231,8 +231,8 @@ Builder.load_string('''
         size_hint: None, None
         size: 20, 18
         border: 0, 0, 0, 0
-        background_normal: 'images/MainControlPanel.tiff'
-        background_down: 'images/MainControlPanelHover.tiff'
+        background_normal: 'data/images/MainControlPanel.tiff'
+        background_down: 'data/images/MainControlPanelHover.tiff'
         on_press: root._resolution()
 
     Button:
@@ -240,8 +240,8 @@ Builder.load_string('''
         size_hint: None, None
         size: 20, 18
         border: 0, 0, 0, 0
-        background_normal: 'images/MainPlaylist.tiff'
-        background_down: 'images/MainPlaylistHover.tiff'
+        background_normal: 'data/images/MainPlaylist.tiff'
+        background_down: 'data/images/MainPlaylistHover.tiff'
         on_press: root._playlist()
 ''')
 
@@ -251,10 +251,50 @@ class ResolutionOption(Button):
 
 
 class ResolutionDropDown(DropDown):
-    pass
+
+    def _reposition(self, *largs):
+        # calculate the coordinate of the attached widget in the window
+        # coordinate sysem
+        win = self._win
+        widget = self.attach_to
+        if not widget or not win:
+            return
+        wx, wy = widget.to_window(*widget.pos)
+        wright, wtop = widget.to_window(widget.right, widget.top)
+
+        # set width and x
+        if self.auto_width:
+            self.width = wright - wx
+
+        # ensure the dropdown list doesn't get out on the X axis, with a
+        # preference to 0 in case the list is too wide.
+        x = wx
+        if x + self.width > win.width:
+            x = win.width - self.width
+        if x < 0:
+            x = 0
+        self.x = x
+
+        # determine if we display the dropdown upper or lower to the widget
+        h_bottom = wy - self.height
+        h_top = win.height - (wtop + self.height)
+        if h_bottom > 0:
+            self.top = wy
+        elif h_top > 0:
+            self.y = wtop
+        else:
+            # none of both top/bottom have enough place to display the widget at
+            # the current size. Take the best side, and fit to it.
+            height = max(h_bottom, h_top)
+            if height == h_bottom:
+                self.top = wy
+                self.height = wy
+            else:
+                self.y = wtop
+                self.height = win.height - wtop
 
 
-class ResolutionPanel(BoxLayout):
+class Resolution(BoxLayout):
 
     RESOLUTION_LIST = (
         (( 128,   96), 'SQCIF'),
@@ -311,7 +351,7 @@ class ResolutionPanel(BoxLayout):
             return False
 
 
-class PlaylistPanel(BoxLayout):
+class Playlist(BoxLayout):
     playlist  = ListProperty([])
     confirm   = ObjectProperty(None)
     cancel    = ObjectProperty(None)
@@ -319,7 +359,7 @@ class PlaylistPanel(BoxLayout):
     selection = ListProperty([])
 
     def __init__(self, **kwargs):
-        super(PlaylistPanel, self).__init__(**kwargs)
+        super(Playlist, self).__init__(**kwargs)
 
         from kivy.adapters.dictadapter import DictAdapter
         from kivy.uix.listview import ListItemButton, CompositeListItem, ListView
@@ -358,11 +398,11 @@ class PlaylistPanel(BoxLayout):
         self.layout.add_widget(list_view)
 
 
-class ConfigPanel(RelativeLayout):
+class Config(RelativeLayout):
     video = ObjectProperty(None)
 
     def __init__(self, **kwargs):
-        super(ConfigPanel, self).__init__(**kwargs)
+        super(Config, self).__init__(**kwargs)
 
     def _resolution(self):
         popup = None
@@ -374,9 +414,9 @@ class ConfigPanel(RelativeLayout):
         def cancel():
             popup.dismiss()
         popup = Popup(title='Configuration YUV image',
-                      content=ResolutionPanel(resolution=self.video.resolution,
-                                              format=self.video.format,
-                                              confirm=confirm, cancel=cancel),
+                      content=Resolution(resolution=self.video.resolution,
+                                         format=self.video.format,
+                                         confirm=confirm, cancel=cancel),
                       size_hint=(None, None), size=(400, 400))
         popup.open()
 
@@ -395,7 +435,7 @@ class ConfigPanel(RelativeLayout):
         def cancel():
             popup.dismiss()
         popup = Popup(title='PlayList YUV Image File',
-                      content=PlaylistPanel(playlist=self.video.playlist,
-                                            confirm=confirm, cancel=cancel),
+                      content=Playlist(playlist=self.video.playlist,
+                                       confirm=confirm, cancel=cancel),
                       size_hint=(None, None), size=(700, 500))
         popup.open()

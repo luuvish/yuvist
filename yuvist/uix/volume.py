@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """\
@@ -19,6 +18,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+__all__ = ('Volume', )
+
 from kivy.lang import Builder
 from kivy.properties import (ObjectProperty, BooleanProperty,
                              OptionProperty, NumericProperty, AliasProperty,
@@ -36,13 +37,13 @@ Builder.load_string('''
             border: 0, 0, 0, 0
             pos: int(self.x), int(self.center_y - 1)
             size: 78, 5
-            source: 'images/MainVolumeSliderTrack.tiff'
+            source: 'data/images/MainVolumeSliderTrack.tiff'
         Rectangle:
             pos: int(self.value_pos[0] - 7), int(self.center_y - 7)
             size: 14, 14
-            source: 'images/MainVolumeSliderKnob.tiff' if self.state == 'normal' else 'images/MainVolumeSliderKnobPressed.tiff'
+            source: 'data/images/MainVolumeSliderKnob.tiff' if self.state == 'normal' else 'data/images/MainVolumeSliderKnobPressed.tiff'
 
-<VolumePanel>:
+<Volume>:
     size: 102, 51
     slider: slider
 
@@ -51,8 +52,8 @@ Builder.load_string('''
         size_hint: None, None
         size: 18, 17
         border: 0, 0, 0, 0
-        background_normal: 'images/MainVolumeMute.tiff' if root.muted or slider.value_normalized == 0 else 'images/MainVolume1.tiff' if slider.value_normalized < .33 else 'images/MainVolume2.tiff' if slider.value_normalized < .66 else 'images/MainVolume3.tiff'
-        background_down: 'images/MainVolumeMute.tiff' if root.muted or slider.value_normalized == 0 else 'images/MainVolume1.tiff' if slider.value_normalized < .33 else 'images/MainVolume2.tiff' if slider.value_normalized < .66 else 'images/MainVolume3.tiff'
+        background_normal: 'data/images/MainVolumeMute.tiff' if root.muted or slider.value_normalized == 0 else 'data/images/MainVolume1.tiff' if slider.value_normalized < .33 else 'data/images/MainVolume2.tiff' if slider.value_normalized < .66 else 'data/images/MainVolume3.tiff'
+        background_down: 'data/images/MainVolumeMute.tiff' if root.muted or slider.value_normalized == 0 else 'data/images/MainVolume1.tiff' if slider.value_normalized < .33 else 'data/images/MainVolume2.tiff' if slider.value_normalized < .66 else 'data/images/MainVolume3.tiff'
         on_press: root._press_muted()
 
     VolumeSlider:
@@ -128,13 +129,13 @@ class VolumeSlider(Widget):
             return True
 
 
-class VolumePanel(RelativeLayout):
+class Volume(RelativeLayout):
     video  = ObjectProperty(None)
     muted  = BooleanProperty(False)
     slider = ObjectProperty(None)
 
     def __init__(self, **kwargs):
-        super(VolumePanel, self).__init__(**kwargs)
+        super(Volume, self).__init__(**kwargs)
 
     def on_video(self, instance, value):
         self.slider.value_normalized = self.video.volume

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """\
@@ -18,6 +17,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+
+__all__ = ('Play', )
 
 from kivy.lang import Builder
 from kivy.properties import StringProperty, ObjectProperty, OptionProperty
@@ -50,7 +51,7 @@ Builder.load_string('''
                 text: 'Open'
                 on_release: root.open(filechooser.path, filechooser.selection)
 
-<PlayPanel>:
+<Play>:
     size: 153+1, 51
 
     Button:
@@ -58,8 +59,8 @@ Builder.load_string('''
         size_hint: None, None
         size: 20, 18
         border: 0, 0, 0, 0
-        background_normal: 'images/MainPrevMovie.tiff'
-        background_down: 'images/MainPrevMovieHover.tiff'
+        background_normal: 'data/images/MainPrevMovie.tiff'
+        background_down: 'data/images/MainPrevMovieHover.tiff'
         on_press: root._prev_movie()
 
     Button:
@@ -67,16 +68,16 @@ Builder.load_string('''
         size_hint: None, None
         size: 18, 18
         border: 0, 0, 0, 0
-        background_normal: 'images/MainPrevSeek.tiff'
-        background_down: 'images/MainPrevSeekHover.tiff'
+        background_normal: 'data/images/MainPrevSeek.tiff'
+        background_down: 'data/images/MainPrevSeekHover.tiff'
         on_press: root._prev_seek()
 
     Button:
         pos: 54, 6
         size_hint: None, None
         size: 45, 45
-        background_normal: 'images/MainPause.tiff' if root.state == 'play' else 'images/MainPlay.tiff'
-        background_down: 'images/MainPausePressed.tiff' if root.state == 'play' else 'images/MainPlayPressed.tiff'
+        background_normal: 'data/images/MainPause.tiff' if root.state == 'play' else 'data/images/MainPlay.tiff'
+        background_down: 'data/images/MainPausePressed.tiff' if root.state == 'play' else 'data/images/MainPlayPressed.tiff'
         on_press: root._play_pause()
 
     Button:
@@ -84,8 +85,8 @@ Builder.load_string('''
         size_hint: None, None
         size: 18, 18
         border: 0, 0, 0, 0
-        background_normal: 'images/MainNextSeek.tiff'
-        background_down: 'images/MainNextSeekHover.tiff'
+        background_normal: 'data/images/MainNextSeek.tiff'
+        background_down: 'data/images/MainNextSeekHover.tiff'
         on_press: root._next_seek()
 
     Button:
@@ -93,8 +94,8 @@ Builder.load_string('''
         size_hint: None, None
         size: 20, 18
         border: 0, 0, 0, 0
-        background_normal: 'images/MainNextMovie.tiff'
-        background_down: 'images/MainNextMovieHover.tiff'
+        background_normal: 'data/images/MainNextMovie.tiff'
+        background_down: 'data/images/MainNextMovieHover.tiff'
         on_press: root._next_movie()
 ''')
 
@@ -105,14 +106,16 @@ class OpenDialog(FloatLayout):
     cancel = ObjectProperty(None)
 
 
-class PlayPanel(RelativeLayout):
+class Play(RelativeLayout):
     video = ObjectProperty(None)
     state = OptionProperty('stop', options=('play', 'pause', 'stop'))
 
     def __init__(self, **kwargs):
-        super(PlayPanel, self).__init__(**kwargs)
+        self._path = '.'
 
-        Window.bind(on_dropfile=self._dropfile)
+        super(Play, self).__init__(**kwargs)
+
+        Window.bind(on_dropfile=self._drop_file)
 
         self._keyboard = Window.request_keyboard(self._keyboard_closed, Window)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
@@ -122,22 +125,7 @@ class PlayPanel(RelativeLayout):
 
     def _play_pause(self):
         if not self.video.source:
-            popup = None
-            def open(path, selected):
-                if len(selected) > 0:
-                    import os
-                    self.video.source = os.path.join(path, selected[0])
-                    self.video.state = 'play'
-                popup.dismiss()
-            def submit():
-                popup.dismiss()
-            from kivy.uix.popup import Popup
-            from kivy.core.window import Window
-            size = Window.size[0] - 160, Window.size[1] - 100
-            popup = Popup(title='Open Image File',
-                          content=OpenDialog(open=open, cancel=submit),
-                          size_hint=(None, None), size=size)
-            popup.open()
+            self._open_file()
             return
         if self.video.state == 'stop':
             self.video.state = 'play'
@@ -189,31 +177,32 @@ class PlayPanel(RelativeLayout):
         self._keyboard = None
 
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
-        if keycode == (111, 'o') and 'meta' in modifiers:
-            popup = None
-            def open(path, selected):
-                if len(selected) > 0:
-                    import os
-                    self.video.source = os.path.join(path, selected[0])
-                    self.video.state = 'play'
-                popup.dismiss()
-            def submit():
-                popup.dismiss()
-            from kivy.uix.popup import Popup
-            from kivy.core.window import Window
-            size = Window.size[0] - 160, Window.size[1] - 100
-            popup = Popup(title='Open Image File',
-                          content=OpenDialog(open=open, cancel=submit),
-                          size_hint=(None, None), size=size)
-            popup.open()
+        from kivy.utils import platform
+        if keycode == (111, 'o') and (
+            platform() == 'win'    and 'ctrl' in modifiers or
+            platform() == 'linux'  and 'ctrl' in modifiers or
+            platform() == 'macosx' and 'meta' in modifiers):
+            self._open_file()
             return True
-        if keycode == (49, '1') and 'meta' in modifiers:
+        if keycode == (49, '1') and (
+            platform() == 'win'    and 'alt'  in modifiers or
+            platform() == 'linux'  and 'alt'  in modifiers or
+            platform() == 'macosx' and 'meta' in modifiers):
             return self._resize(size_hint=(0.5, 0.5))
-        if keycode == (50, '2') and 'meta' in modifiers:
+        if keycode == (50, '2') and (
+            platform() == 'win'    and 'alt'  in modifiers or
+            platform() == 'linux'  and 'alt'  in modifiers or
+            platform() == 'macosx' and 'meta' in modifiers):
             return self._resize(size_hint=(1.0, 1.0))
-        if keycode == (51, '3') and 'meta' in modifiers:
+        if keycode == (51, '3') and (
+            platform() == 'win'    and 'alt'  in modifiers or
+            platform() == 'linux'  and 'alt'  in modifiers or
+            platform() == 'macosx' and 'meta' in modifiers):
             return self._resize(size_hint=(1.5, 1.5))
-        if keycode == (52, '4') and 'meta' in modifiers:
+        if keycode == (52, '4') and (
+            platform() == 'win'    and 'alt'  in modifiers or
+            platform() == 'linux'  and 'alt'  in modifiers or
+            platform() == 'macosx' and 'meta' in modifiers):
             return self._resize(size_hint=(2.0, 2.0))
         return True
 
@@ -231,7 +220,29 @@ class PlayPanel(RelativeLayout):
         window.size = int(iw), int(ih)
         return True
 
-    def _dropfile(filename):
+    def _open_file(self):
+        popup = None
+
+        def open(path, selected):
+            if len(selected) > 0:
+                import os
+                self.video.source = os.path.join(path, selected[0])
+                self.video.state = 'play'
+                self._path = path
+            popup.dismiss()
+
+        def submit():
+            popup.dismiss()
+
+        from kivy.uix.popup import Popup
+        from kivy.core.window import Window
+        size = Window.size[0] - 160, Window.size[1] - 100
+        popup = Popup(title='Open Image File',
+                      content=OpenDialog(path=self._path, open=open, cancel=submit),
+                      size_hint=(None, None), size=size)
+        popup.open()
+
+    def _drop_file(filename):
         print 'dropfile %s' % filename
         self.video.source = filename
         self.video.state = 'play'

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """\
@@ -19,6 +18,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+__all__ = ('Front', )
+
 from kivy.lang import Builder
 from kivy.clock import Clock
 from kivy.properties import (ObjectProperty, StringProperty,
@@ -26,14 +27,14 @@ from kivy.properties import (ObjectProperty, StringProperty,
                              DictProperty, OptionProperty)
 from kivy.uix.gridlayout import GridLayout
 
-from seekpanel   import SeekPanel
-from volumepanel import VolumePanel
-from playpanel   import PlayPanel
-from configpanel import ConfigPanel
+from uix.seek   import Seek
+from uix.volume import Volume
+from uix.play   import Play
+from uix.config import Config
 
 
 Builder.load_string('''
-<MainPanel>:
+<Front>:
     container: container
     cols: 1
 
@@ -53,7 +54,7 @@ Builder.load_string('''
                 size: self.size
                 pos: self.pos
 
-        SeekPanel:
+        Seek:
             size_hint_y: None
             height: 11
             video: root
@@ -62,24 +63,24 @@ Builder.load_string('''
             size_hint_y: None
             height: 51
 
-            VolumePanel:
+            Volume:
                 x: root.x
                 size_hint: None, None
                 video: root
 
-            PlayPanel:
+            Play:
                 center_x: int(root.center_x)
                 size_hint: None, None
                 video: root
 
-            ConfigPanel:
+            Config:
                 right: root.right
                 size_hint: None, None
                 video: root
 ''')
 
 
-class MainPanel(GridLayout):
+class Front(GridLayout):
     source     = StringProperty('')
     format     = OptionProperty('yuv420', options=('yuv400', 'yuv420',
                                                    'yuv422', 'yuv422v', 'yuv444'))
@@ -98,7 +99,7 @@ class MainPanel(GridLayout):
 
     def __init__(self, **kwargs):
         self._image = None
-        super(MainPanel, self).__init__(**kwargs)
+        super(Front, self).__init__(**kwargs)
 
         self.bind(source=self._image_init, format=self._image_init, resolution=self._image_init)
         if self.source:
@@ -149,16 +150,16 @@ class MainPanel(GridLayout):
             if filename is None:
                 return
             if filename.lower().endswith('.yuv'):
-                from yuvimage import YuvImage as CoreImage
+                from yuvist.core.image.image import YuvImage as Image
             else:
-                from kivy.uix.video import Video as CoreImage
-            self._image = CoreImage(source=filename,
-                                    format=self.format,
-                                    resolution=self.resolution,
-                                    state=self.state,
-                                    volume=self.volume,
-                                    pos_hint={'x':0, 'y':0},
-                                    **self.options)
+                from kivy.uix.video import Video as Image
+            self._image = Image(source=filename,
+                                format=self.format,
+                                resolution=self.resolution,
+                                state=self.state,
+                                volume=self.volume,
+                                pos_hint={'x':0, 'y':0},
+                                **self.options)
             self._image.bind(texture=self._play_started,
                              state=self.setter('state'),
                              duration=self.setter('duration'),
@@ -192,4 +193,4 @@ class MainPanel(GridLayout):
 if __name__ == '__main__':
     import sys
     from kivy.base import runTouchApp
-    runTouchApp(MainPanel(source=sys.argv[1]))
+    runTouchApp(Front(source=sys.argv[1]))
