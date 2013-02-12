@@ -26,7 +26,7 @@ from kivy.properties import (StringProperty, ObjectProperty, ListProperty,
                              BooleanProperty, NumericProperty, OptionProperty)
 from kivy.uix.image import Image
 
-from .file import File
+from .yuv import Yuv
 
 
 Builder.load_string('''
@@ -177,7 +177,7 @@ class YuvImage(Image):
                 return
             if self._image is not None:
                 self._image.unbind(on_texture=self._on_tex_change)
-            self._image = ci = File(filename, format=self.format, size=self.resolution)
+            self._image = ci = Yuv(filename, format=self.format, size=self.resolution)
             self._image.volume = self.volume
             ci.bind(on_texture=self._on_tex_change, on_eos=self._on_eos)
             if self.state == 'play' or self.play:

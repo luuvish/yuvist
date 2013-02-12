@@ -18,57 +18,48 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-__all__ = ('File', )
+__all__ = ('Yuv', )
 
 import os
+from threading import Lock
+
 from kivy.clock import Clock
 from kivy.event import EventDispatcher
-from kivy.properties import (StringProperty, ObjectProperty,
-                             BooleanProperty, NumericProperty, OptionProperty,
-                             ListProperty, ReferenceListProperty)
+from kivy.properties import BooleanProperty, NumericProperty, StringProperty, \
+        OptionProperty, ObjectProperty, ListProperty, ReferenceListProperty
+from kivy.graphics.texture import Texture
+
+from .converter import Converter
 
 
-YUV_FIX       = 16            # fixed-point precision
-YUV_RANGE_MIN = -227          # min value of r/g/b output
-YUV_RANGE_MAX = 256 + 226     # max value of r/g/b output
-YUV_HALF      = 1 << (YUV_FIX - 1)
-VP8kVToR      = [0] * 256
-VP8kUToB      = [0] * 256
-VP8kVToG      = [0] * 256
-VP8kUToG      = [0] * 256
-VP8kClip      = [0] * (YUV_RANGE_MAX - YUV_RANGE_MIN)
+YUV_CHROMA_FORMAT = (
+    'yuv400',
+    'yuv420',
+    'yuv422',
+    'yuv422v',
+    'yuv444'
+)
+
+YUV_CHROMA_SUBPIXEL = {
+    'yuv400' : (1, 1),
+    'yuv420' : (2, 2),
+    'yuv422' : (1, 2),
+    'yuv422v': (2, 1),
+    'yuv444' : (1, 1)
+}
+
+OUTPUT_COLOR_FORMAT = (
+    'yuv',
+    'rgb'
+)
 
 
-def _init():
-    for i in xrange(256):
-        VP8kVToR[i] = (89858 * (i - 128) + YUV_HALF) >> YUV_FIX
-        VP8kUToG[i] = -22014 * (i - 128) + YUV_HALF
-        VP8kVToG[i] = -45773 * (i - 128)
-        VP8kUToB[i] = (113618 * (i - 128) + YUV_HALF) >> YUV_FIX
-
-    for i in xrange(YUV_RANGE_MIN, YUV_RANGE_MAX):
-        k = ((i - 16) * 76283 + YUV_HALF) >> YUV_FIX
-        k = 0 if k < 0 else 255 if k > 255 else k
-        VP8kClip[i - YUV_RANGE_MIN] = k
-
-_init()
-
-
-class File(EventDispatcher):
-
-    chroma = {
-        'yuv400' : (1,1),
-        'yuv420' : (2,2),
-        'yuv422' : (1,2),
-        'yuv422v': (2,1),
-        'yuv444' : (1,1)
-    }
+class Yuv(EventDispatcher):
 
     copy_attributes = ('_size', '_filename', '_texture', '_image')
 
     filename = StringProperty(None)
-    format   = OptionProperty('yuv420', options=('yuv400', 'yuv420',
-                                                 'yuv422', 'yuv422v', 'yuv444'))
+    format   = OptionProperty(YUV_CHROMA_FORMAT[1], options=YUV_CHROMA_FORMAT)
     width    = NumericProperty(0)
     height   = NumericProperty(0)
     size     = ReferenceListProperty(width, height)
@@ -79,6 +70,7 @@ class File(EventDispatcher):
     volume   = NumericProperty(1.)
     options  = ObjectProperty({})
 
+    outfmt   = OptionProperty(OUTPUT_COLOR_FORMAT[0], options=OUTPUT_COLOR_FORMAT)
     image    = ObjectProperty(None)
     texture  = ListProperty([])
 
@@ -86,15 +78,17 @@ class File(EventDispatcher):
         self.register_event_type('on_texture')
         self.register_event_type('on_eos')
 
-        from threading import Lock
         self._buffer_lock = Lock()
         self._buffer = None
 
-        super(File, self).__init__(**kwargs)
+        super(Yuv, self).__init__(**kwargs)
 
-        self.format   = kwargs.get('format', 'yuv')
+        self.format   = kwargs.get('format', YUV_CHROMA_FORMAT[1])
         self.size     = kwargs.get('size', [0, 0])
+        self.outfmt   = kwargs.get('outfmt', OUTPUT_COLOR_FORMAT[0])
         self.filename = arg
+
+        self.converter = Converter()
 
     def play(self):
         Clock.unschedule(self._update_glsl)
@@ -134,10 +128,12 @@ class File(EventDispatcher):
                 y = fp.read(self.image['byte'][0])
                 u = fp.read(self.image['byte'][1])
                 v = fp.read(self.image['byte'][1])
-                #self._buffer = self._convert_rgb((y, u, v))
-                #self._update_texture_rgb(self._buffer)
-                self._buffer = y, u, v
-                self._update_texture(self._buffer)
+                if self.outfmt == OUTPUT_COLOR_FORMAT[0]:
+                    self._buffer = y, u, v
+                    self._update_texture(self._buffer)
+                else:
+                    self._buffer = self.converter.convert(self, (y, u, v), type='float')
+                    self._update_texture_rgb(self._buffer)
                 self.dispatch('on_texture')
             elif value == self.duration:
                 self.eos = True
@@ -169,9 +165,9 @@ class File(EventDispatcher):
             raise Exception("Can't open file %s" % filename)
         filesize = os.path.getsize(filename)
 
-        if format not in self.chroma:
+        if format not in YUV_CHROMA_SUBPIXEL:
             raise Exception("Not support chroma format")
-        subpixel = self.chroma[format]
+        subpixel = YUV_CHROMA_SUBPIXEL[format]
         ysize = size
         csize = size[0] // subpixel[0], size[1] // subpixel[1]
         ybyte = ysize[0] * ysize[1]
@@ -180,7 +176,7 @@ class File(EventDispatcher):
         self.image = {
             'file'    : fp,
             'filesize': filesize,
-            'subpixel': self.chroma[format],
+            'subpixel': subpixel,
             'size'    : (ysize, csize),
             'byte'    : (ybyte, cbyte, ybyte + cbyte * 2)
         }
@@ -215,7 +211,6 @@ class File(EventDispatcher):
                 texture.flip_vertical()
                 texture.blit_buffer(self._buffer[2], size=csize, colorfmt='luminance')
 
-            from kivy.graphics.texture import Texture
             texture = [Texture.create(size=ysize, colorfmt='luminance'),
                        Texture.create(size=csize, colorfmt='luminance'),
                        Texture.create(size=csize, colorfmt='luminance')]
@@ -241,61 +236,9 @@ class File(EventDispatcher):
                 texture.flip_vertical()
                 texture.blit_buffer(self._buffer[0], size=ysize, colorfmt='rgb')
 
-            from kivy.graphics.texture import Texture
             texture = [Texture.create(size=ysize, colorfmt='rgb'), None, None]
             texture[0].add_reload_observer(populate_texture)
             texture[0].flip_vertical()
 
         texture[0].blit_buffer(self._buffer[0], size=ysize, colorfmt='rgb')
         self.texture = texture
-
-    def _convert_rgb(self, buf):
-        format   = self.format
-        subpixel = self.image['subpixel']
-        ysize    = self.image['size'][0]
-        csize    = self.image['size'][1]
-
-        def raster(buf):
-            ybuf, ubuf, vbuf = buf
-            y, u, v = 128, 128, 128
-            for posy in xrange(ysize[1]):
-                for posx in xrange(ysize[0]):
-                    y = ybuf[ysize[0] * posy + posx]
-                    if format != 'yuv400':
-                        p = csize[0] * (posy // subpixel[1]) + (posx // subpixel[0])
-                        u = ubuf[p]
-                        v = vbuf[p]
-                    yield ord(y), ord(u), ord(v)
-
-        clip = lambda x: min(max(0, x), 255)
-
-        def rgb(y, u, v):
-            r = 1.164 * (y-16)                   + 1.596 * (v-128)
-            g = 1.164 * (y-16) - 0.391 * (u-128) - 0.813 * (v-128)
-            b = 1.164 * (y-16) + 2.018 * (u-128)
-            return clip(int(r)), clip(int(g)), clip(int(b))
-
-        def rgb2(y, u, v):
-            r = 298 * (y-16)                 + 409 * (v-128)
-            g = 298 * (y-16) - 100 * (u-128) - 208 * (v-128)
-            b = 298 * (y-16) + 516 * (u-128)
-            return clip((r+128)>>8), clip((g+128)>>8), clip((b+128)>>8)
-
-        def rgb3(y, u, v):
-            r_off = VP8kVToR[v]
-            g_off = (VP8kVToG[v] + VP8kUToG[u]) >> YUV_FIX
-            b_off = VP8kUToB[u]
-
-            r = VP8kClip[y + r_off - YUV_RANGE_MIN]
-            g = VP8kClip[y + g_off - YUV_RANGE_MIN]
-            b = VP8kClip[y + b_off - YUV_RANGE_MIN]
-            return r, g, b
-
-        rgb = []
-        for y, u, v in raster(buf):
-            r, g, b = rgb3(y, u, v)
-            rgb.append(r)
-            rgb.append(g)
-            rgb.append(b)
-        rgb = ''.join(map(chr, rgb))
-        return rgb, '', ''

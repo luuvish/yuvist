@@ -31,6 +31,7 @@ from uix.front import Front
 
 
 class Yuvist(App):
+
     title = 'Yuvist-v' + __version__
     icon  = 'data/images/yuvist.png'
 
