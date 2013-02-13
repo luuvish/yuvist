@@ -32,37 +32,34 @@ from kivy.graphics.texture import Texture
 from .converter import Converter
 
 
-YUV_CHROMA_FORMAT = (
-    'yuv400',
-    'yuv420',
-    'yuv422',
-    'yuv422v',
-    'yuv444'
-)
-
-YUV_CHROMA_SUBPIXEL = {
-    'yuv400' : (1, 1),
-    'yuv420' : (2, 2),
-    'yuv422' : (1, 2),
-    'yuv422v': (2, 1),
-    'yuv444' : (1, 1)
-}
-
-OUTPUT_COLOR_FORMAT = (
-    'yuv',
-    'rgb'
-)
-
-
 class Yuv(EventDispatcher):
+
+    YUV_CHROMA_FORMAT = (
+        'yuv400',
+        'yuv420',
+        'yuv422',
+        'yuv422v',
+        'yuv444'
+    )
+
+    YUV_CHROMA_SUBPIXEL = {
+        'yuv400' : (1, 1),
+        'yuv420' : (2, 2),
+        'yuv422' : (1, 2),
+        'yuv422v': (2, 1),
+        'yuv444' : (1, 1)
+    }
+
+    OUT_COLOR_FORMAT = ('rgb', 'yuv', 'mono')
 
     copy_attributes = ('_size', '_filename', '_texture', '_image')
 
     filename = StringProperty(None)
-    format   = OptionProperty(YUV_CHROMA_FORMAT[1], options=YUV_CHROMA_FORMAT)
     width    = NumericProperty(0)
     height   = NumericProperty(0)
     size     = ReferenceListProperty(width, height)
+    yuv_format = OptionProperty(YUV_CHROMA_FORMAT[1], options=YUV_CHROMA_FORMAT)
+    out_format = OptionProperty(OUT_COLOR_FORMAT[1], options=OUT_COLOR_FORMAT)
 
     eos      = BooleanProperty(False)
     position = NumericProperty(-1)
@@ -70,7 +67,6 @@ class Yuv(EventDispatcher):
     volume   = NumericProperty(1.)
     options  = ObjectProperty({})
 
-    outfmt   = OptionProperty(OUTPUT_COLOR_FORMAT[0], options=OUTPUT_COLOR_FORMAT)
     image    = ObjectProperty(None)
     texture  = ListProperty([])
 
@@ -81,14 +77,14 @@ class Yuv(EventDispatcher):
         self._buffer_lock = Lock()
         self._buffer = None
 
+        self.converter = Converter()
+
         super(Yuv, self).__init__(**kwargs)
 
-        self.format   = kwargs.get('format', YUV_CHROMA_FORMAT[1])
-        self.size     = kwargs.get('size', [0, 0])
-        self.outfmt   = kwargs.get('outfmt', OUTPUT_COLOR_FORMAT[0])
+        self.size       = kwargs.get('size', [0, 0])
+        self.yuv_format = kwargs.get('yuv_format', self.YUV_CHROMA_FORMAT[1])
+        self.out_format = kwargs.get('out_format', self.OUT_COLOR_FORMAT[1])
         self.filename = arg
-
-        self.converter = Converter()
 
     def play(self):
         Clock.unschedule(self._update_glsl)
@@ -128,7 +124,7 @@ class Yuv(EventDispatcher):
                 y = fp.read(self.image['byte'][0])
                 u = fp.read(self.image['byte'][1])
                 v = fp.read(self.image['byte'][1])
-                if self.outfmt == OUTPUT_COLOR_FORMAT[0]:
+                if self.out_format == self.OUT_COLOR_FORMAT[1]:
                     self._buffer = y, u, v
                     self._update_texture(self._buffer)
                 else:
@@ -157,7 +153,7 @@ class Yuv(EventDispatcher):
     def _load_image(self, *largs):
         filename = self.filename
         size     = self.size
-        format   = self.format
+        format   = self.yuv_format
 
         try:
             fp = open(filename, 'rb')
@@ -165,9 +161,9 @@ class Yuv(EventDispatcher):
             raise Exception("Can't open file %s" % filename)
         filesize = os.path.getsize(filename)
 
-        if format not in YUV_CHROMA_SUBPIXEL:
+        if format not in self.YUV_CHROMA_SUBPIXEL:
             raise Exception("Not support chroma format")
-        subpixel = YUV_CHROMA_SUBPIXEL[format]
+        subpixel = self.YUV_CHROMA_SUBPIXEL[format]
         ysize = size
         csize = size[0] // subpixel[0], size[1] // subpixel[1]
         ybyte = ysize[0] * ysize[1]

@@ -150,12 +150,13 @@ class Front(GridLayout):
             if filename is None:
                 return
             if filename.lower().endswith('.yuv'):
-                from core.image.image import YuvImage as Image
+                from .yuvvideo import YuvVideo as Image
             else:
                 from kivy.uix.video import Video as Image
-            self._image = Image(source=filename,
-                                format=self.format,
-                                resolution=self.resolution,
+            self._image = Image(yuv_size=self.resolution,
+                                yuv_format=self.format,
+                                out_format='yuv',
+                                source=filename,
                                 state=self.state,
                                 volume=self.volume,
                                 pos_hint={'x':0, 'y':0},
