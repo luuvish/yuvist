@@ -27,7 +27,6 @@ from kivy.clock import Clock
 from kivy.event import EventDispatcher
 from kivy.properties import BooleanProperty, NumericProperty, StringProperty, \
         OptionProperty, ObjectProperty, ListProperty, ReferenceListProperty
-from kivy.graphics.texture import Texture
 
 from .converter import Converter
 
@@ -65,17 +64,12 @@ class Yuv(EventDispatcher):
     position = NumericProperty(-1)
     duration = NumericProperty(-1)
     volume   = NumericProperty(1.)
-    options  = ObjectProperty({})
 
     image    = ObjectProperty(None)
-    texture  = ListProperty([])
 
-    def __init__(self, arg, **kwargs):
-        self.register_event_type('on_texture')
-        self.register_event_type('on_eos')
-
+    def __init__(self, **kwargs):
         self._buffer_lock = Lock()
-        self._buffer = None
+        self._next_frame = None
 
         self.converter = Converter()
 
@@ -84,7 +78,10 @@ class Yuv(EventDispatcher):
         self.size       = kwargs.get('size', [0, 0])
         self.yuv_format = kwargs.get('yuv_format', self.YUV_CHROMA_FORMAT[1])
         self.out_format = kwargs.get('out_format', self.OUT_COLOR_FORMAT[1])
-        self.filename = arg
+        self.filename   = kwargs.get('filename', None)
+
+        if self.filename is not None:
+            self._load_image()
 
     def play(self):
         Clock.unschedule(self._update_glsl)
@@ -103,16 +100,6 @@ class Yuv(EventDispatcher):
     def seek(self, percent):
         self.position = percent * self.duration
 
-    def on_filename(self, instance, value):
-        if value is not None:
-            self._load_image()
-
-    def on_size(self, instance, value):
-        pass
-
-    def on_eos(self, *largs):
-        pass
-
     def on_position(self, instance, value):
         fp = self.image['file']
         if value is not None and fp is not None:
@@ -120,32 +107,12 @@ class Yuv(EventDispatcher):
             if value < 0:
                 pass
             elif 0 <= value < self.duration:
-                fp.seek(value * self.image['byte'][2], os.SEEK_SET)
-                y = fp.read(self.image['byte'][0])
-                u = fp.read(self.image['byte'][1])
-                v = fp.read(self.image['byte'][1])
-                if self.out_format == self.OUT_COLOR_FORMAT[1]:
-                    self._buffer = y, u, v
-                    self._update_texture(self._buffer)
-                else:
-                    self._buffer = self.converter.convert(self, (y, u, v), type='float')
-                    self._update_texture_rgb(self._buffer)
-                self.dispatch('on_texture')
+                self._read_image(value)
             elif value == self.duration:
                 self.eos = True
                 self.dispatch('on_eos')
             else:
                 raise Exception('Overflow seek position > duration')
-
-    def on_image(self, instance, value):
-        return
-        if value is not None:
-            if hasattr(value, 'filename'):
-                self.filename = value.filename
-            self.size = value.size
-
-    def on_texture(self, *largs):
-        pass
 
     def _update_glsl(self, dt):
         self.position += 1
@@ -179,62 +146,32 @@ class Yuv(EventDispatcher):
         self.duration = float(self.image['filesize'] // self.image['byte'][2])
         self.position = 0.
 
-    def _read_image(self, *largs):
-        pass
+    def _read_image(self, value):
+        fp = self.image['file']
+        fp.seek(value * self.image['byte'][2], os.SEEK_SET)
 
-    def _update(self, dt):
+        frame = None
+        if self.out_format == self.OUT_COLOR_FORMAT[0]:
+            y = fp.read(self.image['byte'][0])
+            u = fp.read(self.image['byte'][1])
+            v = fp.read(self.image['byte'][1])
+            frame = self.converter.convert(self, frame, type='float')
+        elif self.out_format == self.OUT_COLOR_FORMAT[1]:
+            y = fp.read(self.image['byte'][0])
+            u = fp.read(self.image['byte'][1])
+            v = fp.read(self.image['byte'][1])
+            frame = y, u, v
+        elif self.out_format == self.OUT_COLOR_FORMAT[2]:
+            y = fp.read(self.image['byte'][0])
+            frame = y, None, None
+
+        with self._buffer_lock:
+            if self._next_frame is None:
+                self._next_frame = frame
+
+    def get_next_frame(self):
         buf = None
         with self._buffer_lock:
-            buf = self._buffer
-            self._buffer = None
-        if buf is not None:
-            self._update_texture(buf)
-            self.dispatch('on_texture')
-
-    def _update_texture(self, buf):
-        ysize = self.image['size'][0]
-        csize = self.image['size'][1]
-        texture = self.texture
-
-        if not texture:
-            def populate_texture_y(texture):
-                texture.flip_vertical()
-                texture.blit_buffer(self._buffer[0], size=ysize, colorfmt='luminance')
-            def populate_texture_u(texture):
-                texture.flip_vertical()
-                texture.blit_buffer(self._buffer[1], size=csize, colorfmt='luminance')
-            def populate_texture_v(texture):
-                texture.flip_vertical()
-                texture.blit_buffer(self._buffer[2], size=csize, colorfmt='luminance')
-
-            texture = [Texture.create(size=ysize, colorfmt='luminance'),
-                       Texture.create(size=csize, colorfmt='luminance'),
-                       Texture.create(size=csize, colorfmt='luminance')]
-            texture[0].add_reload_observer(populate_texture_y)
-            texture[1].add_reload_observer(populate_texture_u)
-            texture[2].add_reload_observer(populate_texture_v)
-            texture[0].flip_vertical()
-            texture[1].flip_vertical()
-            texture[2].flip_vertical()
-
-        texture[0].blit_buffer(self._buffer[0], size=ysize, colorfmt='luminance')
-        texture[1].blit_buffer(self._buffer[1], size=csize, colorfmt='luminance')
-        texture[2].blit_buffer(self._buffer[2], size=csize, colorfmt='luminance')
-        self.texture = texture
-
-    def _update_texture_rgb(self, buf):
-        ysize = self.image['size'][0]
-        csize = self.image['size'][1]
-        texture = self.texture
-
-        if not texture:
-            def populate_texture(texture):
-                texture.flip_vertical()
-                texture.blit_buffer(self._buffer[0], size=ysize, colorfmt='rgb')
-
-            texture = [Texture.create(size=ysize, colorfmt='rgb'), None, None]
-            texture[0].add_reload_observer(populate_texture)
-            texture[0].flip_vertical()
-
-        texture[0].blit_buffer(self._buffer[0], size=ysize, colorfmt='rgb')
-        self.texture = texture
+            buf = self._next_frame
+            self._next_frame = None
+        return buf

@@ -30,6 +30,7 @@ from kivy.properties import StringProperty, BooleanProperty, NumericProperty, \
 from kivy.uix.video import Video
 
 from core.image.yuv import Yuv
+from core.video.video_yuv import VideoYuv
 
 
 Builder.load_string('''
@@ -158,12 +159,14 @@ class YuvVideo(Video):
             if filename.split(':')[0] not in (
                     'http', 'https', 'file', 'udp', 'rtp', 'rtsp'):
                 filename = resource_find(filename)
-            self._video = Yuv(filename,
-                              size=self.yuv_size,
-                              yuv_format=self.yuv_format,
-                              out_format=self.out_format)
+            self._video = VideoYuv(filename=filename,
+                                   size=self.yuv_size,
+                                   yuv_format=self.yuv_format,
+                                   out_format=self.out_format)
             self._video.volume = self.volume
-            self._video.bind(on_texture=self._on_video_frame, on_eos=self._on_eos)
+            self._video.bind(on_load=self._on_video_frame,
+                             on_frame=self._on_video_frame,
+                             on_eos=self._on_eos)
             if self.state == 'play' or self.play:
                 self._video.play()
             self.duration = 1.
@@ -175,7 +178,7 @@ class YuvVideo(Video):
         self.texture  = self._video.texture[0]
         self.texture1 = self._video.texture[1]
         self.texture2 = self._video.texture[2]
-        #self.canvas.ask_update()
+        self.canvas.ask_update()
         #print('FPS: %2.4f (real draw: %d)' % (Clock.get_fps(), Clock.get_rfps()))
 
     def _on_eos(self, *largs):
