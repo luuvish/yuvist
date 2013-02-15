@@ -35,6 +35,7 @@ class VideoYuv(VideoBase):
         self._format   = kwargs.get('format', YUV_CHROMA_FORMAT[1])
         self._colorfmt = kwargs.get('colorfmt', OUT_COLOR_FORMAT[1])
         self._size     = kwargs.get('size', [0, 0])
+        self._fps      = kwargs.get('fps', 30.)
 
         super(VideoYuv, self).__init__(**kwargs)
 
@@ -50,7 +51,8 @@ class VideoYuv(VideoBase):
             self._player = LoaderYuv(filename=self.filename,
                                      format=self._format,
                                      colorfmt=self._colorfmt,
-                                     size=self._size)
+                                     size=self._size,
+                                     fps=self._fps)
         self._player.play()
         self._state = 'playing'
 

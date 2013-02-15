@@ -25,7 +25,7 @@ from kivy.clock import Clock
 from kivy.core.window import Window
 from kivy.graphics import RenderContext
 from kivy.resources import resource_find
-from kivy.properties import StringProperty, BooleanProperty, NumericProperty, \
+from kivy.properties import StringProperty, NumericProperty, \
         ObjectProperty, ListProperty, OptionProperty
 from kivy.uix.video import Video
 
@@ -112,6 +112,7 @@ class YuvVideo(Video):
     format   = OptionProperty(YUV_CHROMA_FORMAT[1], options=YUV_CHROMA_FORMAT)
     colorfmt = OptionProperty(OUT_COLOR_FORMAT[1], options=OUT_COLOR_FORMAT)
     yuv_size = ListProperty([0, 0])
+    yuv_fps  = NumericProperty(30.)
 
     def __init__(self, **kwargs):
         self.canvas = RenderContext(fs=self.FS_CONVERT_YUV)
@@ -167,7 +168,8 @@ class YuvVideo(Video):
             self._video = VideoYuv(filename=filename,
                                    format=self.format,
                                    colorfmt=self.colorfmt,
-                                   size=self.yuv_size)
+                                   size=self.yuv_size,
+                                   fps=self.yuv_fps)
             self._video.volume = self.volume
             self._video.bind(on_load=self._on_video_frame,
                              on_frame=self._on_video_frame,
