@@ -153,9 +153,9 @@ class Front(GridLayout):
                 from .yuvvideo import YuvVideo as Image
             else:
                 from kivy.uix.video import Video as Image
-            self._image = Image(yuv_size=self.resolution,
-                                yuv_format=self.format,
-                                out_format='yuv',
+            self._image = Image(format=self.format,
+                                colorfmt='luminance',
+                                yuv_size=self.resolution,
                                 source=filename,
                                 state=self.state,
                                 volume=self.volume,

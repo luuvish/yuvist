@@ -29,7 +29,7 @@ from kivy.properties import StringProperty, BooleanProperty, NumericProperty, \
         ObjectProperty, ListProperty, OptionProperty
 from kivy.uix.video import Video
 
-from core.image.yuv import Yuv
+from core.video import YUV_CHROMA_FORMAT, OUT_COLOR_FORMAT
 from core.video.video_yuv import VideoYuv
 
 
@@ -105,13 +105,13 @@ class YuvVideo(Video):
     }
     '''
 
-    fs         = StringProperty(None)
-    texture1   = ObjectProperty(None, allownone=True)
-    texture2   = ObjectProperty(None, allownone=True)
+    fs       = StringProperty(None)
+    texture1 = ObjectProperty(None, allownone=True)
+    texture2 = ObjectProperty(None, allownone=True)
 
-    yuv_size   = ListProperty([0, 0])
-    yuv_format = OptionProperty(Yuv.YUV_CHROMA_FORMAT[1], options=Yuv.YUV_CHROMA_FORMAT)
-    out_format = OptionProperty(Yuv.OUT_COLOR_FORMAT[1], options=Yuv.OUT_COLOR_FORMAT)
+    format   = OptionProperty(YUV_CHROMA_FORMAT[1], options=YUV_CHROMA_FORMAT)
+    colorfmt = OptionProperty(OUT_COLOR_FORMAT[1], options=OUT_COLOR_FORMAT)
+    yuv_size = ListProperty([0, 0])
 
     def __init__(self, **kwargs):
         self.canvas = RenderContext(fs=self.FS_CONVERT_YUV)
@@ -120,12 +120,17 @@ class YuvVideo(Video):
 
         super(YuvVideo, self).__init__(**kwargs)
 
-        convert_fs = {
-            Yuv.OUT_COLOR_FORMAT[0]: self.FS_CONVERT_RGB,
-            Yuv.OUT_COLOR_FORMAT[1]: self.FS_CONVERT_YUV,
-            Yuv.OUT_COLOR_FORMAT[2]: self.FS_CONVERT_MONO
-        }
-        self.fs = convert_fs[self.out_format]
+        if self.colorfmt == OUT_COLOR_FORMAT[0]:
+            self.fs = self.FS_CONVERT_RGB
+        elif self.format != YUV_CHROMA_FORMAT[0]:
+            self.fs = self.FS_CONVERT_YUV
+        else:
+            self.fs = self.FS_CONVERT_MONO
+
+    def seek(self, percent):
+        if self.eos == True:
+            self.eos = False
+        super(YuvVideo, self).seek(percent)
 
     def on_fs(self, instance, value):
         shader = self.canvas.shader
@@ -160,9 +165,9 @@ class YuvVideo(Video):
                     'http', 'https', 'file', 'udp', 'rtp', 'rtsp'):
                 filename = resource_find(filename)
             self._video = VideoYuv(filename=filename,
-                                   size=self.yuv_size,
-                                   yuv_format=self.yuv_format,
-                                   out_format=self.out_format)
+                                   format=self.format,
+                                   colorfmt=self.colorfmt,
+                                   size=self.yuv_size)
             self._video.volume = self.volume
             self._video.bind(on_load=self._on_video_frame,
                              on_frame=self._on_video_frame,

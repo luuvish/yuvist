@@ -19,3 +19,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 __all__ = ()
+
+
+YUV_CHROMA_FORMAT = (
+    'yuv400',
+    'yuv420',
+    'yuv422',
+    'yuv422v',
+    'yuv444'
+)
+
+YUV_CHROMA_SUBPIXEL = {
+    'yuv400' : (1, 1),
+    'yuv420' : (2, 2),
+    'yuv422' : (1, 2),
+    'yuv422v': (2, 1),
+    'yuv444' : (1, 1)
+}
+
+OUT_COLOR_FORMAT = ('rgb', 'luminance')

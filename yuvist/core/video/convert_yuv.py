@@ -18,10 +18,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-__all__ = ('Converter', )
+__all__ = ('ConvertYuv', )
+
+from . import YUV_CHROMA_FORMAT, YUV_CHROMA_SUBPIXEL
 
 
-class Converter(object):
+class ConvertYuv(object):
 
     YUV_FIX       = 16            # fixed-point precision
     YUV_RANGE_MIN = -227          # min value of r/g/b output
@@ -33,7 +35,7 @@ class Converter(object):
     VP8kUToG      = [0] * 256
     VP8kClip      = [0] * (YUV_RANGE_MAX - YUV_RANGE_MIN)
 
-    def __init__(self):
+    def __init__(self, **kwargs):
 
         for i in xrange(256):
             self.VP8kVToR[i] = (89858 * (i - 128) + self.YUV_HALF) >> self.YUV_FIX
@@ -45,6 +47,32 @@ class Converter(object):
             k = ((i - 16) * 76283 + self.YUV_HALF) >> self.YUV_FIX
             k = 0 if k < 0 else 255 if k > 255 else k
             self.VP8kClip[i - self.YUV_RANGE_MIN] = k
+
+        type   = kwargs.get('type', 'float')
+        format = kwargs.get('format', YUV_CHROMA_FORMAT[1])
+        ysize  = kwargs.get('size', [0, 0])
+
+        if format not in YUV_CHROMA_SUBPIXEL:
+            raise Exception("Not support chroma format")
+
+        subpixel = YUV_CHROMA_SUBPIXEL[format]
+        csize = ysize[0] // subpixel[0], ysize[1] // subpixel[1]
+        if format in YUV_CHROMA_FORMAT[0]:
+            csize = (0, 0)
+
+        convert = None
+        if type == 'int':
+            convert = self.rgb_int
+        elif type == 'table':
+            convert = self.rgb_table
+        else: # type == 'float':
+            convert = self.rgb_float
+
+        self._convert  = convert
+        self._format   = format
+        self._ysize    = ysize
+        self._csize    = csize
+        self._subpixel = subpixel
 
     def clip(self, value):
         return min(max(0, value), 255)
@@ -77,43 +105,31 @@ class Converter(object):
 
         return r, g, b
 
-    def raster(self, yuv, buf):
+    def raster(self, buf):
 
-        format   = yuv.format
-        subpixel = yuv.image['subpixel']
-        ysize    = yuv.image['size'][0]
-        csize    = yuv.image['size'][1]
+        format   = self._format
+        ysize    = self._ysize
+        csize    = self._csize
+        subpixel = self._subpixel
 
         ybuf, ubuf, vbuf = buf
         y, u, v = 128, 128, 128
 
         for posy in xrange(ysize[1]):
-
             for posx in xrange(ysize[0]):
-
                 y = ybuf[ysize[0] * posy + posx]
-
-                if format != 'yuv400':
+                if format != YUV_CHROMA_FORMAT[0]:
                     p = csize[0] * (posy // subpixel[1]) + (posx // subpixel[0])
                     u = ubuf[p]
                     v = vbuf[p]
-
                 yield ord(y), ord(u), ord(v)
 
-    def convert(self, yuv, buf, type='float'):
-
-        converter = None
-        if type == 'int':
-            converter = self.rgb_int
-        elif type == 'table':
-            converter = self.rgb_table
-        else: # type == 'float':
-            converter = self.rgb_float
+    def convert(self, buf):
 
         rgb = []
 
-        for y, u, v in self.raster(yuv, buf):
-            r, g, b = converter(y, u, v)
+        for y, u, v in self.raster(buf):
+            r, g, b = self._convert(y, u, v)
             rgb.append(r)
             rgb.append(g)
             rgb.append(b)
