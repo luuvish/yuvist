@@ -20,37 +20,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 __all__ = ('Play', )
 
+import os
+
 from kivy.lang import Builder
 from kivy.properties import StringProperty, ObjectProperty, OptionProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.core.window import Window
 
+from .dialog_open import OpenDialog
+
 
 Builder.load_string('''
-<OpenDialog>:
-    BoxLayout:
-        orientation: 'vertical'
-        pos: root.pos
-        size: root.size
-
-        FileChooserListView:
-            id: filechooser
-            multiselect: False
-            path: root.path
-
-        BoxLayout:
-            size_hint_y: None
-            height: 30
-
-            Button:
-                text: 'Cancel'
-                on_release: root.cancel()
-
-            Button:
-                text: 'Open'
-                on_release: root.open(filechooser.path, filechooser.selection)
-
 <Play>:
     size: 153+1, 51
 
@@ -98,12 +79,6 @@ Builder.load_string('''
         background_down: 'data/images/MainNextMovieHover.tiff'
         on_press: root._next_movie()
 ''')
-
-
-class OpenDialog(FloatLayout):
-    path   = StringProperty('.')
-    open   = ObjectProperty(None)
-    cancel = ObjectProperty(None)
 
 
 class Play(RelativeLayout):
@@ -221,25 +196,13 @@ class Play(RelativeLayout):
         return True
 
     def _open_file(self):
-        popup = None
 
-        def open(path, selected):
-            if len(selected) > 0:
-                import os
-                self.video.source = os.path.join(path, selected[0])
-                self.video.state = 'play'
-                self._path = path
-            popup.dismiss()
+        def confirm(path, file):
+            self.video.source = os.path.join(path, file)
+            self.video.state = 'play'
+            self._path = path
 
-        def submit():
-            popup.dismiss()
-
-        from kivy.uix.popup import Popup
-        from kivy.core.window import Window
-        size = Window.size[0] - 160, Window.size[1] - 100
-        popup = Popup(title='Open Image File',
-                      content=OpenDialog(path=self._path, open=open, cancel=submit),
-                      size_hint=(None, None), size=size)
+        popup = OpenDialog(path=self._path, confirm=confirm)
         popup.open()
 
     def _drop_file(filename):
