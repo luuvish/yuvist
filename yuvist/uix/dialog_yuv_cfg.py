@@ -33,6 +33,47 @@ from core.video import YUV_CHROMA_FORMAT
 Builder.load_string('''
 #:import YUV_CHROMA_FORMAT core.video.YUV_CHROMA_FORMAT
 
+#:set YUV_SIZE_LIST (            \
+    (( 128,   96), 'SQCIF'),     \
+    (( 176,  144), 'QCIF'),      \
+    (( 320,  240), 'QVGA'),      \
+    (( 352,  240), '525 SIF'),   \
+    (( 352,  288), 'CIF'),       \
+    (( 352,  480), '525 HHR'),   \
+    (( 352,  576), '625 HHR'),   \
+    (( 640,  360), 'Q720p'),     \
+    (( 640,  480), 'VGA'),       \
+    (( 704,  480), '525 4SIF'),  \
+    (( 720,  480), '525 SD'),    \
+    (( 704,  576), '4CIF'),      \
+    (( 720,  576), '625 SD'),    \
+    (( 864,  480), '480p'),      \
+    (( 800,  600), 'SVGA'),      \
+    (( 960,  540), 'QHD'),       \
+    ((1024,  768), 'XGA'),       \
+    ((1280,  720), '720p HD'),   \
+    ((1280,  960), '4VGA'),      \
+    ((1280, 1024), 'SXGA'),      \
+    ((1408,  960), '525 16SIF'), \
+    ((1408, 1152), '16CIF'),     \
+    ((1600, 1200), '4SVGA'),     \
+    ((1920, 1080), '1080 HD'),   \
+    ((2048, 1024), '2Kx1K'),     \
+    ((2048, 1080), '2Kx1080'),   \
+    ((2560, 1920), '16VGA'),     \
+    ((3616, 1536), '3616x1536'), \
+    ((3680, 1536), '3672x1536'), \
+    ((3840, 2160), '4HD'),       \
+    ((4096, 2048), '4Kx2K'),     \
+    ((4096, 2160), '4096x2160'), \
+    ((4096, 2304), '4096x2304'), \
+    ((7680, 4320), '7680x4320'), \
+    ((8192, 4096), '8192x4096'), \
+    ((8192, 4320), '8192x4320')  \
+)
+
+#:set YUV_CHROMA_LIST ('4:0:0', '4:2:0', '4:2:2', '4:2:2v', '4:4:4')
+
 #:set MIN_YUV_WIDTH  1
 #:set MIN_YUV_HEIGHT 1
 #:set MAX_YUV_WIDTH  8192
@@ -49,6 +90,7 @@ Builder.load_string('''
             pos: self.center_x, self.y
 
 [HSeparator@Label]:
+    pos_hint: ctx.pos_hint if 'pos_hint' in ctx else None
     size_hint_y: None
     height: max(dp(45), self.texture_size[1] + dp(10))
     text: ctx.text if 'text' in ctx else ''
@@ -79,17 +121,9 @@ Builder.load_string('''
             orientation: 'vertical'
             size_hint_x: .5
 
-            Label:
+            HSeparator:
                 pos_hint: {'top':1}
-                size_hint_y: None
-                height: 45
                 text: 'Image Size'
-                canvas.before:
-                    Color:
-                        rgba: .2, .2, .2, .8
-                    Rectangle:
-                        size: self.size
-                        pos: self.pos
 
             Spinner:
                 option_cls: root.option_cls
@@ -97,7 +131,7 @@ Builder.load_string('''
                 pos_hint: {'center_x':.5, 'center_y':.6}
                 size_hint: (.8, None)
                 height: 40
-                values: ('%dx%d' % res for res, name in root.YUV_SIZE_LIST)
+                values: ('%dx%d' % res for res, name in YUV_SIZE_LIST)
                 text: '%dx%d' % tuple(root.yuv_size)
                 on_text: root.yuv_size = map(int, self.text.split('x'))
 
@@ -126,6 +160,7 @@ Builder.load_string('''
                     value: root.yuv_size[0]
                     step: 1
                     on_value: root.yuv_size[0] = int(self.value)
+
                 TextInput:
                     size_hint: (.27, None)
                     height: 40
@@ -151,17 +186,9 @@ Builder.load_string('''
             orientation: 'vertical'
             size_hint_x: .5
 
-            Label:
+            HSeparator:
                 pos_hint: {'top':1}
-                size_hint_y: None
-                height: 45
                 text: 'Chroma Format'
-                canvas.before:
-                    Color:
-                        rgba: .2, .2, .2, .8
-                    Rectangle:
-                        size: self.size
-                        pos: self.pos
 
             GridLayout:
                 pos_hint: {'center_x':.5, 'center_y':.4}
@@ -170,27 +197,27 @@ Builder.load_string('''
                 rows: 5
 
                 ToggleButton:
-                    text: root.YUV_CHROMA_LIST[0]
+                    text: YUV_CHROMA_LIST[0]
                     group: 'chroma'
                     state: 'down' if root.format == YUV_CHROMA_FORMAT[0] else 'normal'
                     on_press: root.format = YUV_CHROMA_FORMAT[0]
                 ToggleButton:
-                    text: root.YUV_CHROMA_LIST[1]
+                    text: YUV_CHROMA_LIST[1]
                     group: 'chroma'
                     state: 'down' if root.format == YUV_CHROMA_FORMAT[1] else 'normal'
                     on_press: root.format = YUV_CHROMA_FORMAT[1]
                 ToggleButton:
-                    text: root.YUV_CHROMA_LIST[2]
+                    text: YUV_CHROMA_LIST[2]
                     group: 'chroma'
                     state: 'down' if root.format == YUV_CHROMA_FORMAT[2] else 'normal'
                     on_press: root.format = YUV_CHROMA_FORMAT[2]
                 ToggleButton:
-                    text: root.YUV_CHROMA_LIST[3]
+                    text: YUV_CHROMA_LIST[3]
                     group: 'chroma'
                     state: 'down' if root.format == YUV_CHROMA_FORMAT[3] else 'normal'
                     on_press: root.format = YUV_CHROMA_FORMAT[3]
                 ToggleButton:
-                    text: root.YUV_CHROMA_LIST[4]
+                    text: YUV_CHROMA_LIST[4]
                     group: 'chroma'
                     state: 'down' if root.format == YUV_CHROMA_FORMAT[4] else 'normal'
                     on_press: root.format = YUV_CHROMA_FORMAT[4]
@@ -262,47 +289,6 @@ class YuvSizeDropDown(DropDown):
 
 
 class YuvCfgLayout(BoxLayout):
-
-    YUV_SIZE_LIST = (
-        (( 128,   96), 'SQCIF'),
-        (( 176,  144), 'QCIF'),
-        (( 320,  240), 'QVGA'),
-        (( 352,  240), '525 SIF'),
-        (( 352,  288), 'CIF'),
-        (( 352,  480), '525 HHR'),
-        (( 352,  576), '625 HHR'),
-        (( 640,  360), 'Q720p'),
-        (( 640,  480), 'VGA'),
-        (( 704,  480), '525 4SIF'),
-        (( 720,  480), '525 SD'),
-        (( 704,  576), '4CIF'),
-        (( 720,  576), '625 SD'),
-        (( 864,  480), '480p'),
-        (( 800,  600), 'SVGA'),
-        (( 960,  540), 'QHD'),
-        ((1024,  768), 'XGA'),
-        ((1280,  720), '720p HD'),
-        ((1280,  960), '4VGA'),
-        ((1280, 1024), 'SXGA'),
-        ((1408,  960), '525 16SIF'),
-        ((1408, 1152), '16CIF'),
-        ((1600, 1200), '4SVGA'),
-        ((1920, 1080), '1080 HD'),
-        ((2048, 1024), '2Kx1K'),
-        ((2048, 1080), '2Kx1080'),
-        ((2560, 1920), '16VGA'),
-        ((3616, 1536), '3616x1536'),
-        ((3680, 1536), '3672x1536'),
-        ((3840, 2160), '4HD'),
-        ((4096, 2048), '4Kx2K'),
-        ((4096, 2160), '4096x2160'),
-        ((4096, 2304), '4096x2304'),
-        ((7680, 4320), '7680x4320'),
-        ((8192, 4096), '8192x4096'),
-        ((8192, 4320), '8192x4320')
-    )
-
-    YUV_CHROMA_LIST = ('4:0:0', '4:2:0', '4:2:2', '4:2:2v', '4:4:4')
 
     option_cls   = ObjectProperty(YuvSizeOption)
     dropdown_cls = ObjectProperty(YuvSizeDropDown)

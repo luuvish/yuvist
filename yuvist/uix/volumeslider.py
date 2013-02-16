@@ -18,18 +18,18 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-__all__ = ('Volume', )
+__all__ = ('VolumeSlider', )
 
 from kivy.lang import Builder
-from kivy.properties import (ObjectProperty, BooleanProperty,
-                             OptionProperty, NumericProperty, AliasProperty,
-                             ReferenceListProperty, BoundedNumericProperty)
 from kivy.uix.widget import Widget
-from kivy.uix.relativelayout import RelativeLayout
+from kivy.properties import StringProperty, NumericProperty, \
+        AliasProperty, OptionProperty, ReferenceListProperty, BoundedNumericProperty
 
 
 Builder.load_string('''
 <VolumeSlider>:
+    orientation: 'horizontal'
+
     canvas:
         Color:
             rgb: 1, 1, 1
@@ -37,41 +37,27 @@ Builder.load_string('''
             border: 0, 0, 0, 0
             pos: int(self.x), int(self.center_y - 1)
             size: 78, 5
-            source: 'data/images/MainVolumeSliderTrack.tiff'
+            source: self.background
         Rectangle:
             pos: int(self.value_pos[0] - 7), int(self.center_y - 7)
             size: 14, 14
-            source: 'data/images/MainVolumeSliderKnob.tiff' if self.state == 'normal' else 'data/images/MainVolumeSliderKnobPressed.tiff'
-
-<Volume>:
-    size: 102, 51
-    slider: slider
-
-    Button:
-        pos: 4, 29
-        size_hint: None, None
-        size: 18, 17
-        border: 0, 0, 0, 0
-        background_normal: 'data/images/MainVolumeMute.tiff' if root.muted or slider.value_normalized == 0 else 'data/images/MainVolume1.tiff' if slider.value_normalized < .33 else 'data/images/MainVolume2.tiff' if slider.value_normalized < .66 else 'data/images/MainVolume3.tiff'
-        background_down: 'data/images/MainVolumeMute.tiff' if root.muted or slider.value_normalized == 0 else 'data/images/MainVolume1.tiff' if slider.value_normalized < .33 else 'data/images/MainVolume2.tiff' if slider.value_normalized < .66 else 'data/images/MainVolume3.tiff'
-        on_press: root._press_muted()
-
-    VolumeSlider:
-        id: slider
-        pos: 24, 35
-        size_hint: None, None
-        size: 78, 5
+            source: self.cursor
 ''')
 
 
 class VolumeSlider(Widget):
-    state   = OptionProperty('normal', options=('normal', 'down'))
-    value   = NumericProperty(0.)
-    min     = NumericProperty(0.)
-    max     = NumericProperty(100.)
-    padding = NumericProperty(7)
-    range   = ReferenceListProperty(min, max)
-    step    = BoundedNumericProperty(0, min=0)
+
+    value       = NumericProperty(0.)
+    min         = NumericProperty(0.)
+    max         = NumericProperty(100.)
+    padding     = NumericProperty(7)
+    orientation = OptionProperty('horizontal', options=('vertical', 'horizontal'))
+    range       = ReferenceListProperty(min, max)
+    step        = BoundedNumericProperty(0, min=0)
+
+    state       = OptionProperty('normal', options=('normal', 'down'))
+    background  = StringProperty('atlas://data/images/defaulttheme/sliderh_background')
+    cursor      = StringProperty('atlas://data/images/defaulttheme/slider_cursor')
 
     def get_norm_value(self):
         vmin = self.min
@@ -96,19 +82,28 @@ class VolumeSlider(Widget):
         x = self.x
         y = self.y
         nval = self.value_normalized
-        return (x + padding + nval * (self.width - 2 * padding), y)
+        if self.orientation == 'horizontal':
+            return (x + padding + nval * (self.width - 2 * padding), y)
+        else:
+            return (x, y + padding + nval * (self.height - 2 * padding))
 
     def set_value_pos(self, pos):
         padding = self.padding
         x = min(self.right - padding, max(pos[0], self.x + padding))
         y = min(self.top - padding, max(pos[1], self.y + padding))
-        if self.width == 0:
-            self.value_normalized = 0
+        if self.orientation == 'horizontal':
+            if self.width == 0:
+                self.value_normalized = 0
+            else:
+                self.value_normalized = (x - self.x - padding) / float(self.width - 2 * padding)
         else:
-            self.value_normalized = (x - self.x - padding) / float(self.width - 2 * padding)
+            if self.height == 0:
+                self.value_normalized = 0
+            else:
+                self.value_normalized = (y - self.y - padding) / float(self.height - 2 * padding)
     value_pos = AliasProperty(get_value_pos, set_value_pos,
                               bind=('x', 'y', 'width', 'height',
-                                    'min', 'max', 'value_normalized'))
+                                    'min', 'max', 'value_normalized', 'orientation'))
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
@@ -127,23 +122,3 @@ class VolumeSlider(Widget):
             self.value_pos = touch.pos
             self.state = 'normal'
             return True
-
-
-class Volume(RelativeLayout):
-    video  = ObjectProperty(None)
-    muted  = BooleanProperty(False)
-    slider = ObjectProperty(None)
-
-    def __init__(self, **kwargs):
-        super(Volume, self).__init__(**kwargs)
-
-    def on_video(self, instance, value):
-        self.slider.value_normalized = self.video.volume
-        self.slider.bind(value_normalized=self._change_volume)
-
-    def _press_muted(self):
-        self.muted = not self.muted
-        self._change_volume(self, self.slider.value_normalized)
-
-    def _change_volume(self, instance, value):
-        self.video.volume = 0 if self.muted else value

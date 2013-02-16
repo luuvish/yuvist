@@ -18,45 +18,24 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-__all__ = ('Seek', )
+__all__ = ('SeekBar', )
 
-from kivy.lang import Builder
-from kivy.properties import (ObjectProperty, NumericProperty, StringProperty)
+from kivy.uix.progressbar import ProgressBar
+from kivy.properties import NumericProperty, ObjectProperty
 from kivy.animation import Animation
 from kivy.factory import Factory
-from kivy.uix.progressbar import ProgressBar
-from kivy.uix.boxlayout import BoxLayout
-
-
-Builder.load_string('''
-<Seek>:
-    orientation: 'horizontal'
-    height: 13
-
-    Label:
-        size_hint_x: None
-        width: 50
-        text: '[size=10][color=444]%s[/color][/size]' % root.lseek
-        markup: True
-    SeekBar:
-        video: root.video
-        max: max(root.duration, root.position, 1)
-        value: root.position
-    Label:
-        size_hint_x: None
-        width: 50
-        text: '[size=10][color=444]-%s[/color][/size]' % root.rseek
-        markup: True
-''')
 
 
 class SeekBar(ProgressBar):
+
     video = ObjectProperty(None)
     seek  = NumericProperty(None, allownone=True)
     alpha = NumericProperty(1.)
 
     def __init__(self, **kwargs):
+
         super(SeekBar, self).__init__(**kwargs)
+
         self.bubble = Factory.Bubble(size=(72,44))
         self.label = Factory.Label(text='0:00')
         self.bubble.add_widget(self.label)
@@ -130,33 +109,3 @@ class SeekBar(ProgressBar):
             self._hide_bubble()
         else:
             self._show_bubble()
-
-
-class Seek(BoxLayout):
-    video    = ObjectProperty(None)
-    duration = NumericProperty(-1)
-    position = NumericProperty(0)
-    lseek    = StringProperty('00:00:00')
-    rseek    = StringProperty('00:00:00')
-
-    def __init__(self, **kwargs):
-        super(Seek, self).__init__(**kwargs)
-
-    def on_video(self, instance, value):
-        self.video.bind(position=self._update_seek, duration=self._update_seek)
-
-    def _update_seek(self, *largs):
-        def format(position):
-            hours   = int(position / 3600)
-            minutes = int(position / 60) - (hours * 60)
-            seconds = int(position) - (hours * 3600 + minutes * 60)
-            return '%02d:%02d:%02d' % (hours, minutes, seconds)
-        self.duration = self.video.duration
-        self.position = self.video.position
-        if self.duration == 0:
-            self.lseek = '00:00:00'
-            self.rseek = '00:00:00'
-        else:
-            seek = self.position / float(self.duration)
-            self.lseek = format(self.duration * seek)
-            self.rseek = format(self.duration * (1. - seek))

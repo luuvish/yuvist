@@ -1,0 +1,123 @@
+#:kivy 1.0
+
+<ImageButton>:
+    size_hint: None, None
+    border: 0, 0, 0, 0
+
+<Front>:
+    container: container
+    slider: slider
+    cols: 1
+
+    FloatLayout:
+        cols: 1
+        id: container
+
+    GridLayout:
+        cols: 1
+        size_hint_y: None
+        height: 62
+
+        canvas:
+            Color:
+                hsv: 0, 0, .8
+            Rectangle:
+                size: self.size
+                pos: self.pos
+
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: 13
+
+            Label:
+                size_hint_x: None
+                width: 50
+                text: '[size=10][color=444]%s[/color][/size]' % root.lseek
+                markup: True
+            SeekBar:
+                video: root
+                max: max(root.duration, root.position, 1)
+                value: root.position
+            Label:
+                size_hint_x: None
+                width: 50
+                text: '[size=10][color=444]-%s[/color][/size]' % root.rseek
+                markup: True
+
+        FloatLayout:
+            size_hint_y: None
+            height: 51
+
+            RelativeLayout:
+                x: root.x
+                size_hint: None, None
+                size: 102, 51
+
+                ImageButton:
+                    pos: 4, 29
+                    size: 18, 17
+                    background_normal: 'data/images/MainVolumeMute.tiff' if root.muted or slider.value_normalized == 0 else 'data/images/MainVolume1.tiff' if slider.value_normalized < .33 else 'data/images/MainVolume2.tiff' if slider.value_normalized < .66 else 'data/images/MainVolume3.tiff'
+                    background_down: 'data/images/MainVolumeMute.tiff' if root.muted or slider.value_normalized == 0 else 'data/images/MainVolume1.tiff' if slider.value_normalized < .33 else 'data/images/MainVolume2.tiff' if slider.value_normalized < .66 else 'data/images/MainVolume3.tiff'
+                    on_press: root._press_muted()
+                VolumeSlider:
+                    id: slider
+                    pos: 24, 35
+                    size_hint: None, None
+                    size: 78, 5
+                    background: 'data/images/MainVolumeSliderTrack.tiff'
+                    cursor: 'data/images/MainVolumeSliderKnob.tiff' if self.state == 'normal' else 'data/images/MainVolumeSliderKnobPressed.tiff'
+
+            RelativeLayout:
+                center_x: int(root.center_x)
+                size_hint: None, None
+                size: 153+1, 51
+
+                ImageButton:
+                    pos: 0, 18
+                    size: 20, 18
+                    background_normal: 'data/images/MainPrevMovie.tiff'
+                    background_down: 'data/images/MainPrevMovieHover.tiff'
+                    on_press: root._prev_movie()
+                ImageButton:
+                    pos: 28, 19
+                    size: 18, 18
+                    background_normal: 'data/images/MainPrevSeek.tiff'
+                    background_down: 'data/images/MainPrevSeekHover.tiff'
+                    on_press: root._prev_seek()
+                ImageButton:
+                    pos: 54, 6
+                    size: 45, 45
+                    background_normal: 'data/images/MainPause.tiff' if root.state == 'play' else 'data/images/MainPlay.tiff'
+                    background_down: 'data/images/MainPausePressed.tiff' if root.state == 'play' else 'data/images/MainPlayPressed.tiff'
+                    on_press: root._play_pause()
+                ImageButton:
+                    pos: 107, 19
+                    size: 18, 18
+                    background_normal: 'data/images/MainNextSeek.tiff'
+                    background_down: 'data/images/MainNextSeekHover.tiff'
+                    on_press: root._next_seek()
+                ImageButton:
+                    pos: 133, 19
+                    size: 20, 18
+                    background_normal: 'data/images/MainNextMovie.tiff'
+                    background_down: 'data/images/MainNextMovieHover.tiff'
+                    on_press: root._next_movie()
+
+            RelativeLayout:
+                right: root.right
+                size_hint: None, None
+                size: 46, 51
+
+                ImageButton:
+                    pos: 0, 28
+                    size: 20, 18
+                    background_normal: 'data/images/MainControlPanel.tiff'
+                    background_down: 'data/images/MainControlPanelHover.tiff'
+                    on_press: root._config_resolution()
+                ImageButton:
+                    pos: 24, 28
+                    size: 20, 18
+                    background_normal: 'data/images/MainPlaylist.tiff'
+                    background_down: 'data/images/MainPlaylistHover.tiff'
+                    on_press: root._config_playlist()
