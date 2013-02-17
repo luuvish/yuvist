@@ -67,9 +67,9 @@ class PlaylistLayout(BoxLayout):
         super(PlaylistLayout, self).__init__(**kwargs)
 
         integers_dict = {
-            str(i): {'source': os.path.basename(self.playlist[i]['source']),
-                     'size': '%dx%d' % tuple(self.playlist[i]['resolution']),
-                     'format': self.playlist[i]['format'],
+            str(i): {'source': os.path.basename(self.playlist[i][0]),
+                     'size': '%dx%d' % tuple(self.playlist[i][3]),
+                     'format': self.playlist[i][1],
                      'playlist': self.playlist[i],
                      'is_selected': False} for i in xrange(len(self.playlist))
         }

@@ -27,7 +27,7 @@ import kivy
 kivy.require('1.5.1')
 
 from kivy.app import App
-from uix.front import Front
+from uix.yuvistpanel import YuvistPanel
 
 
 class Yuvist(App):
@@ -38,16 +38,16 @@ class Yuvist(App):
     def __init__(self, **kwargs):
         super(Yuvist, self).__init__(**kwargs)
 
-        self.filename   = kwargs.get('filename', '')
-        self.format     = kwargs.get('format', 'yuv420')
-        self.resolution = kwargs.get('resolution', [1920, 1080])
-        self.state      = kwargs.get('state', 'pause')
+        self.filename = kwargs.get('filename', '')
+        self.format   = kwargs.get('format', 'yuv420')
+        self.yuv_size = kwargs.get('yuv_size', [1920, 1080])
+        self.state    = kwargs.get('state', 'pause')
 
     def build(self):
-        return Front(source=self.filename,
-                     format=self.format,
-                     resolution=self.resolution,
-                     state=self.state)
+        return YuvistPanel(source=self.filename,
+                           format=self.format,
+                           yuv_size=self.yuv_size,
+                           state=self.state)
 
 
 if __name__ == '__main__':

@@ -4,9 +4,9 @@
     size_hint: None, None
     border: 0, 0, 0, 0
 
-<Front>:
+<YuvistPanel>:
     container: container
-    slider: slider
+    volume_slider: volume
     cols: 1
 
     FloatLayout:
@@ -33,7 +33,7 @@
             Label:
                 size_hint_x: None
                 width: 50
-                text: '[size=10][color=444]%s[/color][/size]' % root.lseek
+                text: '[size=10][color=444]%s[/color][/size]' % root.time_past
                 markup: True
             SeekBar:
                 video: root
@@ -42,7 +42,7 @@
             Label:
                 size_hint_x: None
                 width: 50
-                text: '[size=10][color=444]-%s[/color][/size]' % root.rseek
+                text: '[size=10][color=444]-%s[/color][/size]' % root.time_next
                 markup: True
 
         FloatLayout:
@@ -57,16 +57,17 @@
                 ImageButton:
                     pos: 4, 29
                     size: 18, 17
-                    background_normal: 'data/images/MainVolumeMute.tiff' if root.muted or slider.value_normalized == 0 else 'data/images/MainVolume1.tiff' if slider.value_normalized < .33 else 'data/images/MainVolume2.tiff' if slider.value_normalized < .66 else 'data/images/MainVolume3.tiff'
-                    background_down: 'data/images/MainVolumeMute.tiff' if root.muted or slider.value_normalized == 0 else 'data/images/MainVolume1.tiff' if slider.value_normalized < .33 else 'data/images/MainVolume2.tiff' if slider.value_normalized < .66 else 'data/images/MainVolume3.tiff'
-                    on_press: root._press_muted()
+                    background_normal: 'data/images/MainVolumeMute.tiff' if root.volume_muted or volume.value_normalized == 0 else 'data/images/MainVolume1.tiff' if volume.value_normalized < .33 else 'data/images/MainVolume2.tiff' if volume.value_normalized < .66 else 'data/images/MainVolume3.tiff'
+                    background_down: self.background_normal
+                    on_press: root.volume_muted = not root.volume_muted; root.volume = 0 if root.volume_muted else volume.value_normalized
                 VolumeSlider:
-                    id: slider
+                    id: volume
                     pos: 24, 35
                     size_hint: None, None
                     size: 78, 5
                     background: 'data/images/MainVolumeSliderTrack.tiff'
                     cursor: 'data/images/MainVolumeSliderKnob.tiff' if self.state == 'normal' else 'data/images/MainVolumeSliderKnobPressed.tiff'
+                    on_value_normalized: root.volume = 0 if root.volume_muted else self.value_normalized
 
             RelativeLayout:
                 center_x: int(root.center_x)
@@ -114,7 +115,7 @@
                     size: 20, 18
                     background_normal: 'data/images/MainControlPanel.tiff'
                     background_down: 'data/images/MainControlPanelHover.tiff'
-                    on_press: root._config_resolution()
+                    on_press: root._config_yuv_cfg()
                 ImageButton:
                     pos: 24, 28
                     size: 20, 18
