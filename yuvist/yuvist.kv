@@ -1,5 +1,38 @@
 #:kivy 1.0
 
+#:set SEEK_PANEL_COLOR    (.704, .723, .594)
+#:set SEEK_PANEL_HEIGHT   (11)
+#:set SEEK_TIME_WIDTH     (50)
+
+#:set BOTTOM_PANEL_COLOR  (.704, .704, .704)
+#:set BOTTOM_PANEL_HEIGHT (51)
+
+#:set BUTTON_18x17_SIZE   (18, 17)
+#:set BUTTON_18x18_SIZE   (18, 18)
+#:set BUTTON_20x18_SIZE   (20, 18)
+#:set BUTTON_45x45_SIZE   (45, 45)
+#:set VOLUME_SLIDER_SIZE  (78, 5)
+
+#:set VOLUME_PANEL_WIDTH  (4+18+2+78+4)
+#:set VOLUME_MUTED_X      (4)
+#:set VOLUME_SLIDER_X     (4+18+2)
+#:set VOLUME_MUTED_Y      (51-17-5)
+#:set VOLUME_SLIDER_Y     (51-17-5+(17-5)//2)
+
+#:set PLAY_PANEL_WIDTH    (8+20+8+18+8+45+8+18+8+20+8)//2*2
+#:set PREV_MOVIE_X        (8)
+#:set PREV_SEEK_X         (8+20+8)
+#:set PLAY_PAUSE_X        (8+20+8+18+8)
+#:set NEXT_SEEK_X         (8+20+8+18+8+45+8)
+#:set NEXT_MOVIE_X        (8+20+8+18+8+45+8+18+8)
+#:set PLAY_PAUSE_Y        (51-45)
+#:set PREV_NEXT_Y         (51-45+(45-18)//2)
+
+#:set CONFIG_PANEL_WIDTH  (48)
+#:set CONFIG_YUVCFG_X     (48  -20-4-20-2)
+#:set CONFIG_PLAYLIST_X   (48       -20-2)
+#:set CONFIG_BUTTON_Y     (51-18-5)
+
 <ImageButton>:
     size_hint: None, None
     border: 0, 0, 0, 0
@@ -16,55 +49,65 @@
     GridLayout:
         cols: 1
         size_hint_y: None
-        height: 62
-
-        canvas:
-            Color:
-                hsv: 0, 0, .8
-            Rectangle:
-                size: self.size
-                pos: self.pos
+        height: SEEK_PANEL_HEIGHT + BOTTOM_PANEL_HEIGHT
 
         BoxLayout:
             orientation: 'horizontal'
             size_hint_y: None
-            height: 13
+            height: SEEK_PANEL_HEIGHT
+
+            canvas:
+                Color:
+                    rgb: SEEK_PANEL_COLOR
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
 
             Label:
                 size_hint_x: None
-                width: 50
+                width: SEEK_TIME_WIDTH
                 text: '[size=10][color=444]%s[/color][/size]' % root.time_past
                 markup: True
+
             SeekBar:
                 video: root
                 max: max(root.duration, root.position, 1)
                 value: root.position
+
             Label:
                 size_hint_x: None
-                width: 50
+                width: SEEK_TIME_WIDTH
                 text: '[size=10][color=444]-%s[/color][/size]' % root.time_next
                 markup: True
 
         FloatLayout:
             size_hint_y: None
-            height: 51
+            height: BOTTOM_PANEL_HEIGHT
+
+            canvas:
+                Color:
+                    rgb: BOTTOM_PANEL_COLOR
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
 
             RelativeLayout:
                 x: root.x
                 size_hint: None, None
-                size: 102, 51
+                size: VOLUME_PANEL_WIDTH, BOTTOM_PANEL_HEIGHT
 
                 ImageButton:
-                    pos: 4, 29
-                    size: 18, 17
+                    pos: VOLUME_MUTED_X, VOLUME_MUTED_Y
+                    size: BUTTON_18x17_SIZE
                     background_normal: 'data/images/MainVolumeMute.tiff' if root.volume_muted or volume.value_normalized == 0 else 'data/images/MainVolume1.tiff' if volume.value_normalized < .33 else 'data/images/MainVolume2.tiff' if volume.value_normalized < .66 else 'data/images/MainVolume3.tiff'
                     background_down: self.background_normal
                     on_press: root.volume_muted = not root.volume_muted; root.volume = 0 if root.volume_muted else volume.value_normalized
+
                 VolumeSlider:
                     id: volume
-                    pos: 24, 35
+                    pos: VOLUME_SLIDER_X, VOLUME_SLIDER_Y
                     size_hint: None, None
-                    size: 78, 5
+                    size: VOLUME_SLIDER_SIZE
                     background: 'data/images/MainVolumeSliderTrack.tiff'
                     cursor: 'data/images/MainVolumeSliderKnob.tiff' if self.state == 'normal' else 'data/images/MainVolumeSliderKnobPressed.tiff'
                     on_value_normalized: root.volume = 0 if root.volume_muted else self.value_normalized
@@ -72,35 +115,39 @@
             RelativeLayout:
                 center_x: int(root.center_x)
                 size_hint: None, None
-                size: 153+1, 51
+                size: PLAY_PANEL_WIDTH, BOTTOM_PANEL_HEIGHT
 
                 ImageButton:
-                    pos: 0, 18
-                    size: 20, 18
+                    pos: PREV_MOVIE_X, PREV_NEXT_Y
+                    size: BUTTON_20x18_SIZE
                     background_normal: 'data/images/MainPrevMovie.tiff'
                     background_down: 'data/images/MainPrevMovieHover.tiff'
                     on_press: root._prev_movie()
+
                 ImageButton:
-                    pos: 28, 19
-                    size: 18, 18
+                    pos: PREV_SEEK_X, PREV_NEXT_Y
+                    size: BUTTON_18x18_SIZE
                     background_normal: 'data/images/MainPrevSeek.tiff'
                     background_down: 'data/images/MainPrevSeekHover.tiff'
                     on_press: root._prev_seek()
+
                 ImageButton:
-                    pos: 54, 6
-                    size: 45, 45
+                    pos: PLAY_PAUSE_X, PLAY_PAUSE_Y
+                    size: BUTTON_45x45_SIZE
                     background_normal: 'data/images/MainPause.tiff' if root.state == 'play' else 'data/images/MainPlay.tiff'
                     background_down: 'data/images/MainPausePressed.tiff' if root.state == 'play' else 'data/images/MainPlayPressed.tiff'
                     on_press: root._play_pause()
+
                 ImageButton:
-                    pos: 107, 19
-                    size: 18, 18
+                    pos: NEXT_SEEK_X, PREV_NEXT_Y
+                    size: BUTTON_18x18_SIZE
                     background_normal: 'data/images/MainNextSeek.tiff'
                     background_down: 'data/images/MainNextSeekHover.tiff'
                     on_press: root._next_seek()
+
                 ImageButton:
-                    pos: 133, 19
-                    size: 20, 18
+                    pos: NEXT_MOVIE_X, PREV_NEXT_Y
+                    size: BUTTON_20x18_SIZE
                     background_normal: 'data/images/MainNextMovie.tiff'
                     background_down: 'data/images/MainNextMovieHover.tiff'
                     on_press: root._next_movie()
@@ -108,17 +155,18 @@
             RelativeLayout:
                 right: root.right
                 size_hint: None, None
-                size: 46, 51
+                size: CONFIG_PANEL_WIDTH, BOTTOM_PANEL_HEIGHT
 
                 ImageButton:
-                    pos: 0, 28
-                    size: 20, 18
+                    pos: CONFIG_YUVCFG_X, CONFIG_BUTTON_Y
+                    size: BUTTON_20x18_SIZE
                     background_normal: 'data/images/MainControlPanel.tiff'
                     background_down: 'data/images/MainControlPanelHover.tiff'
                     on_press: root._config_yuv_cfg()
+
                 ImageButton:
-                    pos: 24, 28
-                    size: 20, 18
+                    pos: CONFIG_PLAYLIST_X, CONFIG_BUTTON_Y
+                    size: BUTTON_20x18_SIZE
                     background_normal: 'data/images/MainPlaylist.tiff'
                     background_down: 'data/images/MainPlaylistHover.tiff'
                     on_press: root._config_playlist()
