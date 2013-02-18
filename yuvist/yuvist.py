@@ -36,7 +36,13 @@ class Yuvist(App):
     icon  = 'data/images/yuvist.png'
 
     def __init__(self, **kwargs):
+
         super(Yuvist, self).__init__(**kwargs)
+
+        import pygame
+        pygame.display.init()
+        info = pygame.display.Info()
+        self.desktop_size = [info.current_w, info.current_h]
 
         self.filename = kwargs.get('filename', '')
         self.format   = kwargs.get('format', 'yuv420')
@@ -47,7 +53,8 @@ class Yuvist(App):
         return YuvistPanel(source=self.filename,
                            format=self.format,
                            yuv_size=self.yuv_size,
-                           state=self.state)
+                           state=self.state,
+                           desktop_size=self.desktop_size)
 
 
 if __name__ == '__main__':

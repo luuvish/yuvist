@@ -24,7 +24,6 @@ from kivy.lang import Builder
 from kivy.properties import StringProperty, ObjectProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.popup import Popup
-from kivy.core.window import Window
 
 
 Builder.load_string('''
@@ -82,5 +81,5 @@ class OpenDialog(Popup):
 
         self.title     = kwargs.get('title', 'Open Image File')
         self.size_hint = kwargs.get('size_hint', (None, None))
-        self.size      = kwargs.get('size', (Window.size[0] - 160, Window.size[1] - 100))
+        self.size      = kwargs.get('size', (700, 500))
         self.content   = OpenLayout(popup=self, path=path)

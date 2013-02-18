@@ -23,7 +23,6 @@ __all__ = ('YuvistPanel', )
 import os
 
 from kivy.resources import resource_find
-from kivy.core.window import Window
 from kivy.properties import StringProperty, NumericProperty, BooleanProperty, \
         ObjectProperty, ListProperty, DictProperty, OptionProperty, ReferenceListProperty
 from kivy.uix.button import Button
@@ -58,6 +57,7 @@ class YuvistPanel(GridLayout):
     options          = DictProperty({})
 
     container        = ObjectProperty(None)
+    desktop_size     = ListProperty([0, 0])
 
     time_past        = StringProperty('00:00:00')
     time_next        = StringProperty('00:00:00')
@@ -80,6 +80,8 @@ class YuvistPanel(GridLayout):
         self.bind(position=self._update_seek_time, duration=self._update_seek_time)
         self.volume_slider.value_normalized = self.volume
 
+        from kivy.core.window import Window
+        self.desktop_size = kwargs.get('desktop_size', Window.size)
         Window.bind(on_dropfile=self._drop_file)
         self._keyboard = Window.request_keyboard(self._keyboard_closed, Window)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
@@ -148,6 +150,9 @@ class YuvistPanel(GridLayout):
             self.size = (100, 100)
             self.pos_hint = {}
             self.size_hint = (1, 1)
+
+            self.prev_size = window.size
+            window.size = self.desktop_size
         else:
             state = self._fullscreen_state
             window.remove_widget(self)
@@ -159,6 +164,10 @@ class YuvistPanel(GridLayout):
             self.size = state['size']
             if state['parent'] is not window:
                 state['parent'].add_widget(self)
+
+            window.size = self.prev_size
+
+        window.fullscreen = value
 
     def on_playitem(self, instance, value):
         if self._video is not None:
@@ -186,12 +195,14 @@ class YuvistPanel(GridLayout):
                          volume=self.setter('volume'))
         self._update_playlist()
 
-        Window.title = '%s %s:%s@%2.f' % (
-            os.path.basename(self.source),
-            '%dx%d' % tuple(self.yuv_size),
-            self.format.upper(),
-            self.yuv_fps
-        )
+        window = self.get_parent_window()
+        if window:
+            window.title = '%s %s:%s@%2.f' % (
+                os.path.basename(self.source),
+                '%dx%d' % tuple(self.yuv_size),
+                self.format.upper(),
+                self.yuv_fps
+            )
 
     def _play_started(self, instance, value):
         self.container.clear_widgets()
@@ -263,7 +274,9 @@ class YuvistPanel(GridLayout):
             self.playpath = path
             self.source = os.path.join(path, file)
             self.state = 'play'
-        popup = OpenDialog(path=self.playpath, confirm=confirm)
+        window = self.get_parent_window()
+        size = (window.size[0] - 160, window.size[1] - 100) if window else (700, 500)
+        popup = OpenDialog(path=self.playpath, confirm=confirm, size=size)
         popup.open()
 
     def _config_yuv_cfg(self):
@@ -277,7 +290,9 @@ class YuvistPanel(GridLayout):
         def confirm(playitem):
             self.playitem = playitem[:]
             self.state = 'play'
-        popup = PlaylistDialog(playlist=self.playlist, confirm=confirm)
+        window = self.get_parent_window()
+        size = (window.size[0] - 160, window.size[1] - 100) if window else (700, 500)
+        popup = PlaylistDialog(playlist=self.playlist, confirm=confirm, size=size)
         popup.open()
 
     def _keyboard_closed(self):

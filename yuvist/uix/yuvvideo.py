@@ -22,7 +22,6 @@ __all__ = ('YuvVideo', )
 
 from kivy.lang import Builder
 from kivy.clock import Clock
-from kivy.core.window import Window
 from kivy.graphics import RenderContext
 from kivy.resources import resource_find
 from kivy.properties import StringProperty, NumericProperty, \
@@ -142,7 +141,9 @@ class YuvVideo(Video):
             raise Exception('failed')
 
     def on_size(self, instance, value):
-        self.canvas['projection_mat'] = Window.render_context['projection_mat']
+        window = self.get_parent_window()
+        if window:
+            self.canvas['projection_mat'] = window.render_context['projection_mat']
 
     def on_state(self, instance, value):
         if not self._video:

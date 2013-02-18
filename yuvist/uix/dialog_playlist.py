@@ -28,7 +28,6 @@ from kivy.adapters.dictadapter import DictAdapter
 from kivy.uix.listview import ListItemButton, CompositeListItem, ListView
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
-from kivy.core.window import Window
 
 
 Builder.load_string('''
@@ -124,5 +123,5 @@ class PlaylistDialog(Popup):
 
         self.title     = kwargs.get('title', 'PlayList YUV Image File')
         self.size_hint = kwargs.get('size_hint', (None, None))
-        self.size      = kwargs.get('size', (Window.size[0] - 160, Window.size[1] - 100))
+        self.size      = kwargs.get('size', (700, 500))
         self.content   = PlaylistLayout(popup=self, playlist=playlist)
