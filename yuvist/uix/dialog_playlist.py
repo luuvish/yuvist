@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 __all__ = ('PlaylistDialog', )
 
-import os
+from os.path import basename
 
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty, ListProperty
@@ -66,7 +66,7 @@ class PlaylistLayout(BoxLayout):
         super(PlaylistLayout, self).__init__(**kwargs)
 
         integers_dict = {
-            str(i): {'source': os.path.basename(self.playlist[i][0]),
+            str(i): {'source': basename(self.playlist[i][0]),
                      'size': '%dx%d' % tuple(self.playlist[i][3]),
                      'format': self.playlist[i][1],
                      'playlist': self.playlist[i],

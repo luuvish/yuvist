@@ -20,7 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 __all__ = ('LoaderYuv', )
 
-import os
+from os import SEEK_SET
+from os.path import getsize
 from threading import Lock
 
 from kivy.clock import Clock
@@ -187,7 +188,7 @@ class LoaderYuv(EventDispatcher):
             fp = open(filename, 'rb')
         except IOError:
             raise Exception("Can't open file %s" % filename)
-        filesize = os.path.getsize(filename)
+        filesize = getsize(filename)
 
         if format not in YUV_CHROMA_SUBPIXEL:
             raise Exception("Not support chroma format")
@@ -221,7 +222,7 @@ class LoaderYuv(EventDispatcher):
         if self._file is None:
             return
 
-        self._file.seek(nframe * self._pdata, os.SEEK_SET)
+        self._file.seek(nframe * self._pdata, SEEK_SET)
 
         y, u, v = None, None, None
         if self._ydata > 0:
