@@ -114,6 +114,9 @@ class YuvVideo(Video):
     yuv_fps  = NumericProperty(30.)
 
     def __init__(self, **kwargs):
+
+        self.register_event_type('on_load')
+
         self.canvas = RenderContext(fs=self.FS_CONVERT_YUV)
         self.canvas['texture1'] = 1
         self.canvas['texture2'] = 2
@@ -131,6 +134,9 @@ class YuvVideo(Video):
         if self.eos == True:
             self.eos = False
         super(YuvVideo, self).seek(percent)
+
+    def on_load(self, *largs):
+        pass
 
     def on_fs(self, instance, value):
         shader = self.canvas.shader
@@ -172,7 +178,7 @@ class YuvVideo(Video):
                                    size=self.yuv_size,
                                    fps=self.yuv_fps)
             self._video.volume = self.volume
-            self._video.bind(on_load=self._on_video_frame,
+            self._video.bind(on_load=self._on_video_load,
                              on_frame=self._on_video_frame,
                              on_eos=self._on_eos)
             if self.state == 'play' or self.play:
@@ -180,12 +186,16 @@ class YuvVideo(Video):
             self.duration = 1.
             self.position = 0.
 
+    def _on_video_load(self, *largs):
+        self._on_video_frame()
+        self.dispatch('on_load')
+
     def _on_video_frame(self, *largs):
         self.duration = self._video.duration
         self.position = self._video.position
-        self.texture  = self._video.texture[0]
-        self.texture1 = self._video.texture[1]
         self.texture2 = self._video.texture[2]
+        self.texture1 = self._video.texture[1]
+        self.texture  = self._video.texture[0]
         self.canvas.ask_update()
         #print('FPS: %2.4f (real draw: %d)' % (Clock.get_fps(), Clock.get_rfps()))
 

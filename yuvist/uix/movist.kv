@@ -1,5 +1,8 @@
 #:kivy 1.0
 
+#:import SeekBar uix.seekbar
+#:import VolumeSlider uix.volumeslider
+
 #:set SEEK_PANEL_COLOR    (.704, .723, .594)
 #:set SEEK_PANEL_HEIGHT   (11)
 #:set SEEK_TIME_WIDTH     (50)
@@ -58,7 +61,7 @@
         Label:
             size_hint_x: None
             width: SEEK_TIME_WIDTH
-            text: '[size=10][color=444]%s[/color][/size]' % root.time_past
+            text: '[size=10][color=444]%s[/color][/size]' % root.past_seektime
             markup: True
 
         SeekBar:
@@ -69,7 +72,7 @@
         Label:
             size_hint_x: None
             width: SEEK_TIME_WIDTH
-            text: '[size=10][color=444]-%s[/color][/size]' % root.time_next
+            text: '[size=10][color=444]-%s[/color][/size]' % root.next_seektime
             markup: True
 
     FloatLayout:
@@ -102,6 +105,7 @@
                 size: VOLUME_SLIDER_SIZE
                 background: 'data/images/MainVolumeSliderTrack.tiff'
                 cursor: 'data/images/MainVolumeSliderKnob.tiff' if self.state == 'normal' else 'data/images/MainVolumeSliderKnobPressed.tiff'
+                value_normalized: 1.0
                 on_value_normalized: root.volume = 0 if root.volume_muted else self.value_normalized
 
         RelativeLayout:
@@ -114,35 +118,35 @@
                 size: BUTTON_20x18_SIZE
                 background_normal: 'data/images/MainPrevMovie.tiff'
                 background_down: 'data/images/MainPrevMovieHover.tiff'
-                on_press: root._prev_movie()
+                on_press: root.dispatch('on_prev_video')
 
             ImageButton:
                 pos: PREV_SEEK_X, PREV_NEXT_Y
                 size: BUTTON_18x18_SIZE
                 background_normal: 'data/images/MainPrevSeek.tiff'
                 background_down: 'data/images/MainPrevSeekHover.tiff'
-                on_press: root._prev_seek()
+                on_press: root.dispatch('on_prev_frame')
 
             ImageButton:
                 pos: PLAY_PAUSE_X, PLAY_PAUSE_Y
                 size: BUTTON_45x45_SIZE
                 background_normal: 'data/images/MainPause.tiff' if root.state == 'play' else 'data/images/MainPlay.tiff'
                 background_down: 'data/images/MainPausePressed.tiff' if root.state == 'play' else 'data/images/MainPlayPressed.tiff'
-                on_press: root._play_pause()
+                on_press: root.dispatch('on_play_pause')
 
             ImageButton:
                 pos: NEXT_SEEK_X, PREV_NEXT_Y
                 size: BUTTON_18x18_SIZE
                 background_normal: 'data/images/MainNextSeek.tiff'
                 background_down: 'data/images/MainNextSeekHover.tiff'
-                on_press: root._next_seek()
+                on_press: root.dispatch('on_next_frame')
 
             ImageButton:
                 pos: NEXT_MOVIE_X, PREV_NEXT_Y
                 size: BUTTON_20x18_SIZE
                 background_normal: 'data/images/MainNextMovie.tiff'
                 background_down: 'data/images/MainNextMovieHover.tiff'
-                on_press: root._next_movie()
+                on_press: root.dispatch('on_next_video')
 
         RelativeLayout:
             right: root.right
@@ -154,11 +158,11 @@
                 size: BUTTON_20x18_SIZE
                 background_normal: 'data/images/MainControlPanel.tiff'
                 background_down: 'data/images/MainControlPanelHover.tiff'
-                on_press: root._config_yuv_cfg()
+                on_press: root.dispatch('on_config_yuv_cfg')
 
             ImageButton:
                 pos: CONFIG_PLAYLIST_X, CONFIG_BUTTON_Y
                 size: BUTTON_20x18_SIZE
                 background_normal: 'data/images/MainPlaylist.tiff'
                 background_down: 'data/images/MainPlaylistHover.tiff'
-                on_press: root._config_playlist()
+                on_press: root.dispatch('on_config_playlist')

@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 __all__ = ('FrontPanel', )
 
-from os.path import dirname, basename, join
+from os.path import dirname, join
 
 from kivy.lang import Builder
 from kivy.resources import resource_find
@@ -30,15 +30,13 @@ from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.video import Video
 
+from uix.yuvvideo import YuvVideo
+
 from core.video import YUV_CHROMA_FORMAT
 from core.video import OUT_COLOR_FORMAT
 
-from uix.seekbar import SeekBar
-from uix.volumeslider import VolumeSlider
-from uix.yuvvideo import YuvVideo
 
-
-Builder.load_file(join(dirname(__file__), 'frontpanel.kv'))
+Builder.load_file(join(dirname(__file__), 'movist.kv'))
 
 
 class ImageButton(Button):
@@ -47,11 +45,8 @@ class ImageButton(Button):
 
 class FrontPanel(GridLayout):
 
-    control       = ObjectProperty(None)
-    display       = ObjectProperty(None)
-
-    time_past     = StringProperty('00:00:00')
-    time_next     = StringProperty('00:00:00')
+    past_seektime = StringProperty('00:00:00')
+    next_seektime = StringProperty('00:00:00')
     volume_muted  = BooleanProperty(False)
     volume_slider = ObjectProperty(None)
 
@@ -70,15 +65,79 @@ class FrontPanel(GridLayout):
     playitem      = ReferenceListProperty(source, format, colorfmt, yuv_size, yuv_fps)
 
     def __init__(self, **kwargs):
+
+        self.register_event_type('on_load_video')
+        self.register_event_type('on_prev_video')
+        self.register_event_type('on_next_video')
+        self.register_event_type('on_prev_frame')
+        self.register_event_type('on_next_frame')
+        self.register_event_type('on_play_pause')
+
+        self.register_event_type('on_fullscreen')
+        self.register_event_type('on_exit')
+
+        self.register_event_type('on_open_file')
+        self.register_event_type('on_config_yuv_cfg')
+        self.register_event_type('on_config_playlist')
+
         self._video = None
+
         super(FrontPanel, self).__init__(**kwargs)
 
-        self.bind(position=self._update_seek_time, duration=self._update_seek_time)
+        self.bind(position=self._on_seektime, duration=self._on_seektime)
 
     def seek(self, percent):
         if not self._video:
             return
         self._video.seek(percent)
+
+    def on_load_video(self, *largs):
+        pass
+
+    def on_prev_video(self, *largs):
+        pass
+
+    def on_next_video(self, *largs):
+        pass
+
+    def on_prev_frame(self, *largs):
+        if self.duration == 0:
+            return
+        step = 1 / float(self.yuv_fps) if self.yuv_fps != 0. else 1.
+        seek = (self.position - step) / float(self.duration)
+        self.seek(seek)
+
+    def on_next_frame(self, *largs):
+        if self.duration == 0:
+            return
+        step = 1 / float(self.yuv_fps) if self.yuv_fps != 0. else 1.
+        seek = (self.position + step) / float(self.duration)
+        self.seek(seek)
+
+    def on_play_pause(self, *largs):
+        if not self.source:
+            self.dispatch('on_open_file')
+            return
+
+        if self.state == 'play':
+            self.state = 'pause'
+        else:
+            self.state = 'play'
+
+    def on_fullscreen(self, *largs):
+        pass
+
+    def on_exit(self, *largs):
+        pass
+
+    def on_open_file(self, *largs):
+        pass
+
+    def on_config_yuv_cfg(self, *largs):
+        pass
+
+    def on_config_playlist(self, *largs):
+        pass
 
     def on_state(self, instance, value):
         if not self._video:
@@ -93,12 +152,12 @@ class FrontPanel(GridLayout):
         if not self._video:
             return
         self._video.volume = value
-        self.volume_slider.value_normalized = self.volume
 
     def on_playitem(self, instance, value):
+
         if self._video is not None:
             self._video.state = 'stop'
-            self._video.unbind(texture=self._play_started,
+            self._video.unbind(on_load=self._on_load_video,
                                state=self.setter('state'),
                                duration=self.setter('duration'),
                                position=self.setter('position'),
@@ -110,77 +169,34 @@ class FrontPanel(GridLayout):
             return
 
         cls = YuvVideo if filename.lower().endswith('.yuv') else Video
+
         self._video = cls(format=self.format, colorfmt=self.colorfmt,
                 yuv_size=self.yuv_size, yuv_fps=self.yuv_fps,
                 source=filename, state=self.state, volume=self.volume,
                 pos_hint={'x':0, 'y':0}, **self.options)
-        self._video.bind(texture=self._play_started,
+
+        self._video.bind(on_load=self._on_load_video,
                          state=self.setter('state'),
                          duration=self.setter('duration'),
                          position=self.setter('position'),
                          volume=self.setter('volume'))
 
-        if self.control is not None:
-            self.control.update_playlist(value)
+    def _on_load_video(self, *largs):
+        self.dispatch('on_load_video', self.playitem)
 
-        window = self.get_parent_window()
-        if window:
-            window.title = '%s %s:%s@%2.f' % (
-                basename(self.source),
-                '%dx%d' % tuple(self.yuv_size),
-                self.format.upper(),
-                self.yuv_fps
-            )
+    def _on_seektime(self, *largs):
 
-    def _play_started(self, instance, value):
-        self.display.clear_widgets()
-        self.display.add_widget(self._video)
-
-    def _update_seek_time(self, *largs):
         if not self._video or self.duration == 0:
-            self.time_past = '00:00:00'
-            self.time_next = '00:00:00'
+            self.past_seektime = '00:00:00'
+            self.next_seektime = '00:00:00'
             return
-        def time_format(sec):
-            hours   = int(sec / 3600)
-            minutes = int(sec / 60) - (hours * 60)
-            seconds = int(sec) - (hours * 3600 + minutes * 60)
+
+        def seektime(seek):
+            hours   = int(seek / 3600)
+            minutes = int(seek / 60) - (hours * 60)
+            seconds = int(seek) - (hours * 3600 + minutes * 60)
             return '%02d:%02d:%02d' % (hours, minutes, seconds)
-        percent = self.position / float(self.duration)
-        self.time_past = time_format(self.duration * percent)
-        self.time_next = time_format(self.duration * (1. - percent))
 
-    def _play_pause(self):
-        if not self.source:
-            self.control.open_file()
-            return
-        if self.state == 'play':
-            self.state = 'pause'
-        else:
-            self.state = 'play'
-
-    def _prev_movie(self):
-        self.control.prev_movie(self.playitem)
-
-    def _next_movie(self):
-        self.control.next_movie(self.playitem)
-
-    def _prev_seek(self):
-        if self.duration == 0:
-            return
-        step = 1 / float(self.yuv_fps) if self.yuv_fps != 0. else 1.
-        seek = (self.position - step) / float(self.duration)
-        self.seek(seek)
-
-    def _next_seek(self):
-        if self.duration == 0:
-            return
-        step = 1 / float(self.yuv_fps) if self.yuv_fps != 0. else 1.
-        seek = (self.position + step) / float(self.duration)
-        self.seek(seek)
-
-    def _config_yuv_cfg(self):
-        self.control.config_yuv_cfg()
-
-    def _config_playlist(self):
-        self.control.config_playlist()
+        seek = self.position / float(self.duration)
+        self.past_seektime = seektime(self.duration * seek)
+        self.next_seektime = seektime(self.duration * (1. - seek))

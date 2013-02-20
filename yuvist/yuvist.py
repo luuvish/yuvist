@@ -26,11 +26,11 @@ __version__ = '0.9.2'
 import kivy
 kivy.require('1.5.1')
 
+from os.path import basename, join
+
 from kivy.app import App
 from kivy.properties import BooleanProperty, StringProperty, ListProperty, ObjectProperty
 from kivy.uix.gridlayout import GridLayout
-
-from os.path import dirname, basename, join
 
 from uix.dialog_open import OpenDialog
 from uix.dialog_yuv_cfg import YuvCfgDialog
@@ -41,9 +41,9 @@ class Yuvist(GridLayout):
 
     front            = ObjectProperty(None)
     display          = ObjectProperty(None)
+    desktop_size     = ListProperty([0, 0])
     fullscreen       = BooleanProperty(False)
     allow_fullscreen = BooleanProperty(True)
-    desktop_size     = ListProperty([0, 0])
 
     playpath         = StringProperty('.')
     playlist         = ListProperty([])
@@ -59,58 +59,12 @@ class Yuvist(GridLayout):
         self._keyboard = Window.request_keyboard(self._keyboard_closed, Window)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
 
-    def prev_movie(self, playitem):
-        playlist = self.playlist[:]
-        for i in xrange(len(playlist)):
-            if playlist[i][0] == playitem[0] and i > 0:
-                self.front.playitem = playlist[i-1]
-                self.front.state = 'play'
-                return
-
-    def next_movie(self, playitem):
-        playlist = self.playlist[:]
-        for i in xrange(len(playlist)):
-            if playlist[i][0] == playitem[0] and i < len(playlist)-1:
-                self.front.playitem = playlist[i+1]
-                self.front.state = 'play'
-                return
-
-    def update_playlist(self, newitem):
-        playlist = self.playlist[:]
-        for playitem in playlist:
-            if playitem[0] == newitem[0]:
-                playitem[1:] = newitem[1:]
-                return
-        self.playlist.append(newitem[:])
-
-    def open_file(self):
-        front = self.front
-        def confirm(path, filename):
-            self.playpath = path
-            front.source = join(path, filename)
-            front.state = 'play'
-        window = self.get_parent_window()
-        size = (window.size[0] - 160, window.size[1] - 100) if window else (700, 500)
-        popup = OpenDialog(path=self.playpath, confirm=confirm, size=size)
-        popup.open()
-
-    def config_yuv_cfg(self):
-        front = self.front
-        def confirm(format, yuv_size):
-            front.playitem = [front.source, format, front.colorfmt, yuv_size, front.yuv_fps]
-            front.state = 'play'
-        popup = YuvCfgDialog(format=front.format, yuv_size=front.yuv_size, confirm=confirm)
-        popup.open()
-
-    def config_playlist(self):
-        front = self.front
-        def confirm(playitem):
-            front.playitem = playitem[:]
-            front.state = 'play'
-        window = self.get_parent_window()
-        size = (window.size[0] - 160, window.size[1] - 100) if window else (700, 500)
-        popup = PlaylistDialog(playlist=self.playlist, confirm=confirm, size=size)
-        popup.open()
+        self.front.bind(on_load_video=self._on_load_video,
+                        on_prev_video=self._on_prev_video,
+                        on_next_video=self._on_next_video,
+                        on_open_file=self._on_open_file,
+                        on_config_yuv_cfg=self._on_config_yuv_cfg,
+                        on_config_playlist=self._on_config_playlist)
 
     def on_touch_down(self, touch):
         if not self.collide_point(*touch.pos):
@@ -176,6 +130,73 @@ class Yuvist(GridLayout):
 
         window.fullscreen = value
 
+    def _on_load_video(self, front, value):
+
+        self.display.clear_widgets()
+        self.display.add_widget(front._video)
+
+        source, format, colorfmt, yuv_size, yuv_fps = value
+
+        window = self.get_parent_window()
+        if window:
+            window.title = '%s %s:%s@%2.f' % (
+                basename(source),
+                '%dx%d' % tuple(yuv_size),
+                format.upper(),
+                yuv_fps
+            )
+
+        playlist = self.playlist[:]
+        for playitem in playlist:
+            if playitem[0] == source:
+                playitem[1:] = value[1:]
+                return
+        self.playlist.append(value[:])
+
+    def _on_prev_video(self, front, *largs):
+        playitem = front.playitem
+        playlist = self.playlist[:]
+        for i in xrange(len(playlist)):
+            if playlist[i][0] == playitem[0] and i > 0:
+                front.playitem = playlist[i-1][:]
+                front.state = 'play'
+                return
+
+    def _on_next_video(self, front, *largs):
+        playitem = front.playitem
+        playlist = self.playlist[:]
+        for i in xrange(len(playlist)):
+            if playlist[i][0] == playitem[0] and i < len(playlist)-1:
+                front.playitem = playlist[i+1][:]
+                front.state = 'play'
+                return
+
+    def _on_open_file(self, front, *largs):
+        def confirm(path, filename):
+            self.playpath = path
+            front.source = join(path, filename)
+            front.state = 'play'
+        window = self.get_parent_window()
+        size = (window.size[0] - 160, window.size[1] - 100) if window else (700, 500)
+        popup = OpenDialog(path=self.playpath, confirm=confirm, size=size)
+        popup.open()
+
+    def _on_config_yuv_cfg(self, front, *largs):
+        def confirm(format, yuv_size):
+            front.playitem = [front.source, format, front.colorfmt, yuv_size, front.yuv_fps]
+            front.state = 'play'
+        popup = YuvCfgDialog(format=front.format, yuv_size=front.yuv_size, confirm=confirm)
+        popup.open()
+
+    def _on_config_playlist(self, front, *largs):
+        def confirm(playitem):
+            front.playitem = playitem[:]
+            front.state = 'play'
+        window = self.get_parent_window()
+        size = (window.size[0] - 160, window.size[1] - 100) if window else (700, 500)
+        popup = PlaylistDialog(playlist=self.playlist, confirm=confirm, size=size)
+        popup.open()
+
     def _keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_keyboard_down)
         self._keyboard = None
@@ -186,7 +207,7 @@ class Yuvist(GridLayout):
             platform() == 'win'    and 'ctrl' in modifiers or
             platform() == 'linux'  and 'ctrl' in modifiers or
             platform() == 'macosx' and 'meta' in modifiers):
-            self.open_file()
+            self._on_open_file(self.front)
             return True
         if keycode == (49, '1') and (
             platform() == 'win'    and 'alt'  in modifiers or
