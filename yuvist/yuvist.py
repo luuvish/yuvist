@@ -39,6 +39,7 @@ from uix.dialog_playlist import PlaylistDialog
 
 class Yuvist(GridLayout):
 
+    popup            = ObjectProperty(None, allownone=True)
     front            = ObjectProperty(None)
     display          = ObjectProperty(None)
     desktop_size     = ListProperty([0, 0])
@@ -65,14 +66,6 @@ class Yuvist(GridLayout):
                         on_open_file=self._on_open_file,
                         on_config_yuv_cfg=self._on_config_yuv_cfg,
                         on_config_playlist=self._on_config_playlist)
-
-    def on_touch_down(self, touch):
-        if not self.collide_point(*touch.pos):
-            return False
-        if touch.is_double_tap and self.allow_fullscreen:
-            self.fullscreen = not self.fullscreen
-            return True
-        return super(Yuvist, self).on_touch_down(touch)
 
     def on_fullscreen(self, instance, value):
         window = self.get_parent_window()
@@ -203,32 +196,74 @@ class Yuvist(GridLayout):
 
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         from kivy.utils import platform
-        if keycode == (111, 'o') and (
-            platform() == 'win'    and 'ctrl' in modifiers or
-            platform() == 'linux'  and 'ctrl' in modifiers or
-            platform() == 'macosx' and 'meta' in modifiers):
-            self._on_open_file(self.front)
-            return True
-        if keycode == (49, '1') and (
-            platform() == 'win'    and 'alt'  in modifiers or
-            platform() == 'linux'  and 'alt'  in modifiers or
-            platform() == 'macosx' and 'meta' in modifiers):
+
+        if keycode[1] == '0' and 'meta' in modifiers:
             return self._resize(size_hint=(0.5, 0.5))
-        if keycode == (50, '2') and (
-            platform() == 'win'    and 'alt'  in modifiers or
-            platform() == 'linux'  and 'alt'  in modifiers or
-            platform() == 'macosx' and 'meta' in modifiers):
+        if keycode[1] == '1' and 'meta' in modifiers:
             return self._resize(size_hint=(1.0, 1.0))
-        if keycode == (51, '3') and (
-            platform() == 'win'    and 'alt'  in modifiers or
-            platform() == 'linux'  and 'alt'  in modifiers or
-            platform() == 'macosx' and 'meta' in modifiers):
-            return self._resize(size_hint=(1.5, 1.5))
-        if keycode == (52, '4') and (
-            platform() == 'win'    and 'alt'  in modifiers or
-            platform() == 'linux'  and 'alt'  in modifiers or
-            platform() == 'macosx' and 'meta' in modifiers):
+        if keycode[1] == '2' and 'meta' in modifiers:
             return self._resize(size_hint=(2.0, 2.0))
+        if keycode[1] == '3' and 'meta' in modifiers:
+            return self._resize(size_hint=(0.5, 0.5))
+        if keycode[1] == 'F' and 'meta' in modifiers:
+            return self._resize(size_hint=(0.5, 0.5))
+
+        if keycode[1] == 'enter':
+            if self.allow_fullscreen:
+                self.fullscreen = not self.fullscreen
+            return True
+
+        if keycode[1] == 'up':
+            volume = self.front.volume
+            volume += 0.1
+            if volume > 1.0:
+                volume = 1.0
+            self.front.volume = volume
+            return True
+        if keycode[1] == 'down':
+            volume = self.front.volume
+            volume -= 0.1
+            if volume < 0.0:
+                volume = 0.0
+            self.front.volume = volume
+            return True
+        if keycode[1] == 'down' and 'meta' in modifiers and 'alt' in modifiers:
+            self.front.volume = 0.0
+            return True
+
+        if keycode[1] == 'home':
+            self.front.seek(0.)
+            return True
+        if keycode[1] == 'end':
+            self.front.seek(1.)
+            return True
+
+        if keycode[1] == 'left' and 'meta' in modifiers and 'alt' in modifiers:
+            self.front.dispatch('on_prev_video')
+            return True
+        if keycode[1] == 'right' and 'meta' in modifiers and 'alt' in modifiers:
+            self.front.dispatch('on_next_video')
+            return True
+        if keycode[1] == '[':
+            self.front.dispatch('on_prev_frame')
+            return True
+        if keycode[1] == ']':
+            self.front.dispatch('on_next_frame')
+            return True
+        if keycode[1] == 'spacebar':
+            self.front.dispatch('on_play_pause')
+            return True
+
+        if keycode[1] == 'o' and 'meta' in modifiers:
+            self.front.dispatch('on_open_file')
+            return True
+        if keycode[1] == 'c' and 'meta' in modifiers and 'alt' in modifiers:
+            self.front.dispatch('on_config_yuv_cfg')
+            return True
+        if keycode[1] == 'l' and 'meta' in modifiers and 'alt' in modifiers:
+            self.front.dispatch('on_config_playlist')
+            return True
+
         return True
 
     def _resize(self, size_hint=(1., 1.)):

@@ -3,6 +3,32 @@
 #:import SeekBar uix.seekbar
 #:import VolumeSlider uix.volumeslider
 
+#:set IMAGE_VOLUME_MUTED           'data/skins/movist/MainVolumeMute.tiff'
+#:set IMAGE_VOLUME_033             'data/skins/movist/MainVolume1.tiff'
+#:set IMAGE_VOLUME_066             'data/skins/movist/MainVolume2.tiff'
+#:set IMAGE_VOLUME_100             'data/skins/movist/MainVolume3.tiff'
+#:set IMAGE_VOLUME_SLIDER_TRACK    'data/skins/movist/MainVolumeSliderTrack.tiff'
+#:set IMAGE_VOLUME_CURSOR_NORMAL   'data/skins/movist/MainVolumeSliderKnob.tiff'
+#:set IMAGE_VOLUME_CURSOR_DOWN     'data/skins/movist/MainVolumeSliderKnobPressed.tiff'
+
+#:set IMAGE_PREV_VIDEO_NORMAL      'data/skins/movist/MainPrevMovie.tiff'
+#:set IMAGE_PREV_VIDEO_DOWN        'data/skins/movist/MainPrevMovieHover.tiff'
+#:set IMAGE_PREV_SEEK_NORMAL       'data/skins/movist/MainPrevSeek.tiff'
+#:set IMAGE_PREV_SEEK_DOWN         'data/skins/movist/MainPrevSeekHover.tiff'
+#:set IMAGE_PLAY_NORMAL            'data/skins/movist/MainPlay.tiff'
+#:set IMAGE_PLAY_DOWN              'data/skins/movist/MainPlayPressed.tiff'
+#:set IMAGE_PAUSE_NORMAL           'data/skins/movist/MainPause.tiff'
+#:set IMAGE_PAUSE_DOWN             'data/skins/movist/MainPausePressed.tiff'
+#:set IMAGE_NEXT_SEEK_NORMAL       'data/skins/movist/MainNextSeek.tiff'
+#:set IMAGE_NEXT_SEEK_DOWN         'data/skins/movist/MainNextSeekHover.tiff'
+#:set IMAGE_NEXT_VIDEO_NORMAL      'data/skins/movist/MainNextMovie.tiff'
+#:set IMAGE_NEXT_VIDEO_DOWN        'data/skins/movist/MainNextMovieHover.tiff'
+
+#:set IMAGE_CONFIG_YUVCFG_NORMAL   'data/skins/movist/MainControlPanel.tiff'
+#:set IMAGE_CONFIG_YUVCFG_DOWN     'data/skins/movist/MainControlPanelHover.tiff'
+#:set IMAGE_CONFIG_PLAYLIST_NORMAL 'data/skins/movist/MainPlaylist.tiff'
+#:set IMAGE_CONFIG_PLAYLIST_DOWN   'data/skins/movist/MainPlaylistHover.tiff'
+
 #:set SEEK_PANEL_COLOR    (.704, .723, .594)
 #:set SEEK_PANEL_HEIGHT   (11)
 #:set SEEK_TIME_WIDTH     (50)
@@ -23,11 +49,11 @@
 #:set VOLUME_SLIDER_Y     (51-17-5+(17-5)//2)
 
 #:set PLAY_PANEL_WIDTH    (8+20+8+18+8+45+8+18+8+20+8)//2*2
-#:set PREV_MOVIE_X        (8)
+#:set PREV_VIDEO_X        (8)
 #:set PREV_SEEK_X         (8+20+8)
 #:set PLAY_PAUSE_X        (8+20+8+18+8)
 #:set NEXT_SEEK_X         (8+20+8+18+8+45+8)
-#:set NEXT_MOVIE_X        (8+20+8+18+8+45+8+18+8)
+#:set NEXT_VIDEO_X        (8+20+8+18+8+45+8+18+8)
 #:set PLAY_PAUSE_Y        (51-45)
 #:set PREV_NEXT_Y         (51-45+(45-18)//2)
 
@@ -94,7 +120,7 @@
             ImageButton:
                 pos: VOLUME_MUTED_X, VOLUME_MUTED_Y
                 size: BUTTON_18x17_SIZE
-                background_normal: 'data/images/MainVolumeMute.tiff' if root.volume_muted or volume.value_normalized == 0 else 'data/images/MainVolume1.tiff' if volume.value_normalized < .33 else 'data/images/MainVolume2.tiff' if volume.value_normalized < .66 else 'data/images/MainVolume3.tiff'
+                background_normal: IMAGE_VOLUME_MUTED if root.volume_muted or volume.value_normalized == 0 else IMAGE_VOLUME_033 if volume.value_normalized < .33 else IMAGE_VOLUME_066 if volume.value_normalized < .66 else IMAGE_VOLUME_100
                 background_down: self.background_normal
                 on_press: root.volume_muted = not root.volume_muted; root.volume = 0 if root.volume_muted else volume.value_normalized
 
@@ -103,8 +129,8 @@
                 pos: VOLUME_SLIDER_X, VOLUME_SLIDER_Y
                 size_hint: None, None
                 size: VOLUME_SLIDER_SIZE
-                background: 'data/images/MainVolumeSliderTrack.tiff'
-                cursor: 'data/images/MainVolumeSliderKnob.tiff' if self.state == 'normal' else 'data/images/MainVolumeSliderKnobPressed.tiff'
+                background: IMAGE_VOLUME_SLIDER_TRACK
+                cursor: IMAGE_VOLUME_CURSOR_NORMAL if self.state == 'normal' else IMAGE_VOLUME_CURSOR_DOWN
                 value_normalized: 1.0
                 on_value_normalized: root.volume = 0 if root.volume_muted else self.value_normalized
 
@@ -114,38 +140,38 @@
             size: PLAY_PANEL_WIDTH, BOTTOM_PANEL_HEIGHT
 
             ImageButton:
-                pos: PREV_MOVIE_X, PREV_NEXT_Y
+                pos: PREV_VIDEO_X, PREV_NEXT_Y
                 size: BUTTON_20x18_SIZE
-                background_normal: 'data/images/MainPrevMovie.tiff'
-                background_down: 'data/images/MainPrevMovieHover.tiff'
+                background_normal: IMAGE_PREV_VIDEO_NORMAL
+                background_down: IMAGE_PREV_VIDEO_DOWN
                 on_press: root.dispatch('on_prev_video')
 
             ImageButton:
                 pos: PREV_SEEK_X, PREV_NEXT_Y
                 size: BUTTON_18x18_SIZE
-                background_normal: 'data/images/MainPrevSeek.tiff'
-                background_down: 'data/images/MainPrevSeekHover.tiff'
+                background_normal: IMAGE_PREV_SEEK_NORMAL
+                background_down: IMAGE_PREV_SEEK_DOWN
                 on_press: root.dispatch('on_prev_frame')
 
             ImageButton:
                 pos: PLAY_PAUSE_X, PLAY_PAUSE_Y
                 size: BUTTON_45x45_SIZE
-                background_normal: 'data/images/MainPause.tiff' if root.state == 'play' else 'data/images/MainPlay.tiff'
-                background_down: 'data/images/MainPausePressed.tiff' if root.state == 'play' else 'data/images/MainPlayPressed.tiff'
+                background_normal: IMAGE_PAUSE_NORMAL if root.state == 'play' else IMAGE_PLAY_NORMAL
+                background_down: IMAGE_PAUSE_DOWN if root.state == 'play' else IMAGE_PLAY_DOWN
                 on_press: root.dispatch('on_play_pause')
 
             ImageButton:
                 pos: NEXT_SEEK_X, PREV_NEXT_Y
                 size: BUTTON_18x18_SIZE
-                background_normal: 'data/images/MainNextSeek.tiff'
-                background_down: 'data/images/MainNextSeekHover.tiff'
+                background_normal: IMAGE_NEXT_SEEK_NORMAL
+                background_down: IMAGE_NEXT_SEEK_DOWN
                 on_press: root.dispatch('on_next_frame')
 
             ImageButton:
-                pos: NEXT_MOVIE_X, PREV_NEXT_Y
+                pos: NEXT_VIDEO_X, PREV_NEXT_Y
                 size: BUTTON_20x18_SIZE
-                background_normal: 'data/images/MainNextMovie.tiff'
-                background_down: 'data/images/MainNextMovieHover.tiff'
+                background_normal: IMAGE_NEXT_VIDEO_NORMAL
+                background_down: IMAGE_NEXT_VIDEO_DOWN
                 on_press: root.dispatch('on_next_video')
 
         RelativeLayout:
@@ -156,13 +182,13 @@
             ImageButton:
                 pos: CONFIG_YUVCFG_X, CONFIG_BUTTON_Y
                 size: BUTTON_20x18_SIZE
-                background_normal: 'data/images/MainControlPanel.tiff'
-                background_down: 'data/images/MainControlPanelHover.tiff'
+                background_normal: IMAGE_CONFIG_YUVCFG_NORMAL
+                background_down: IMAGE_CONFIG_YUVCFG_DOWN
                 on_press: root.dispatch('on_config_yuv_cfg')
 
             ImageButton:
                 pos: CONFIG_PLAYLIST_X, CONFIG_BUTTON_Y
                 size: BUTTON_20x18_SIZE
-                background_normal: 'data/images/MainPlaylist.tiff'
-                background_down: 'data/images/MainPlaylistHover.tiff'
+                background_normal: IMAGE_CONFIG_PLAYLIST_NORMAL
+                background_down: IMAGE_CONFIG_PLAYLIST_DOWN
                 on_press: root.dispatch('on_config_playlist')

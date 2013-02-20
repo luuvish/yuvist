@@ -36,7 +36,7 @@ from core.video import YUV_CHROMA_FORMAT
 from core.video import OUT_COLOR_FORMAT
 
 
-Builder.load_file(join(dirname(__file__), 'movist.kv'))
+Builder.load_file(join(dirname(__file__), '../data/skins/movist.kv'))
 
 
 class ImageButton(Button):
@@ -169,11 +169,15 @@ class FrontPanel(GridLayout):
             return
 
         cls = YuvVideo if filename.lower().endswith('.yuv') else Video
-
-        self._video = cls(format=self.format, colorfmt=self.colorfmt,
-                yuv_size=self.yuv_size, yuv_fps=self.yuv_fps,
-                source=filename, state=self.state, volume=self.volume,
-                pos_hint={'x':0, 'y':0}, **self.options)
+        self._video = cls(format=self.format,
+                          colorfmt=self.colorfmt,
+                          yuv_size=self.yuv_size,
+                          yuv_fps=self.yuv_fps,
+                          source=filename,
+                          state=self.state,
+                          volume=self.volume,
+                          pos_hint={'x':0, 'y':0},
+                          **self.options)
 
         self._video.bind(on_load=self._on_load_video,
                          state=self.setter('state'),
