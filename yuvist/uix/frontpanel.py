@@ -158,6 +158,7 @@ class FrontPanel(GridLayout):
         if self._video is not None:
             self._video.state = 'stop'
             self._video.unbind(on_load=self._on_load_video,
+                               texture=self._on_load_video,
                                state=self.setter('state'),
                                duration=self.setter('duration'),
                                position=self.setter('position'),
@@ -180,6 +181,7 @@ class FrontPanel(GridLayout):
                           **self.options)
 
         self._video.bind(on_load=self._on_load_video,
+                         texture=self._on_load_video,
                          state=self.setter('state'),
                          duration=self.setter('duration'),
                          position=self.setter('position'),
@@ -187,6 +189,8 @@ class FrontPanel(GridLayout):
 
     def _on_load_video(self, *largs):
         self.dispatch('on_load_video', self.playitem)
+        if self._video is not None:
+            self._video.unbind(texture=self._on_load_video)
 
     def _on_seektime(self, *largs):
 

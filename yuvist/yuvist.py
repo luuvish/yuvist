@@ -28,21 +28,51 @@ kivy.require('1.5.1')
 
 from os.path import basename, join
 
+from kivy.utils import platform
 from kivy.app import App
+from kivy.lang import Builder
 from kivy.properties import BooleanProperty, StringProperty, ListProperty, ObjectProperty
+from kivy.animation import Animation
+from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.relativelayout import RelativeLayout
 
+from uix.frontpanel import FrontPanel
+from uix.osd import OnScreenDisplay
 from uix.dialog_open import OpenDialog
 from uix.dialog_yuv_cfg import YuvCfgDialog
 from uix.dialog_playlist import PlaylistDialog
 
 
-class Yuvist(GridLayout):
+Builder.load_string('''
+<Yuvist>:
+    display: video
+    osd: osd
+    front: front
+
+    FloatLayout:
+        id: video
+        size_hint: (None, None)
+        width: root.width
+        height: root.height - self.y
+        pos: (0, 0 if root.fullscreen else front.height)
+
+    OnScreenDisplay:
+        id: osd
+        pos: 10, root.height - self.height - 10
+
+    FrontPanel:
+        id: front
+''')
+
+
+class Yuvist(FloatLayout):
 
     popup            = ObjectProperty(None, allownone=True)
+    osd              = ObjectProperty(None)
     front            = ObjectProperty(None)
     display          = ObjectProperty(None)
-    desktop_size     = ListProperty([0, 0])
     fullscreen       = BooleanProperty(False)
     allow_fullscreen = BooleanProperty(True)
 
@@ -53,19 +83,20 @@ class Yuvist(GridLayout):
 
         super(Yuvist, self).__init__(**kwargs)
 
-        from kivy.core.window import Window
-        self.desktop_size = kwargs.get('desktop_size', Window.size)
-
-        Window.bind(on_dropfile=self._drop_file)
-        self._keyboard = Window.request_keyboard(self._keyboard_closed, Window)
-        self._keyboard.bind(on_key_down=self._on_keyboard_down)
-
         self.front.bind(on_load_video=self._on_load_video,
                         on_prev_video=self._on_prev_video,
                         on_next_video=self._on_next_video,
+                        on_prev_frame=self._on_prev_frame,
+                        on_next_frame=self._on_next_frame,
+                        on_play_pause=self._on_play_pause,
                         on_open_file=self._on_open_file,
                         on_config_yuv_cfg=self._on_config_yuv_cfg,
                         on_config_playlist=self._on_config_playlist)
+
+        from kivy.core.window import Window
+        Window.bind(on_dropfile=self._drop_file)
+        self._keyboard = Window.request_keyboard(self._keyboard_closed, Window)
+        self._keyboard.bind(on_key_down=self._on_keyboard_down)
 
     def on_fullscreen(self, instance, value):
         window = self.get_parent_window()
@@ -105,8 +136,9 @@ class Yuvist(GridLayout):
             self.pos_hint = {}
             self.size_hint = (1, 1)
 
-            self.prev_size = window.size
-            window.size = self.desktop_size
+            import pygame
+            window.size = pygame.display.list_modes()[0]
+            self.osd.message('fullscreen mode')
         else:
             state = self._fullscreen_state
             window.remove_widget(self)
@@ -119,7 +151,8 @@ class Yuvist(GridLayout):
             if state['parent'] is not window:
                 state['parent'].add_widget(self)
 
-            window.size = self.prev_size
+            window.size = state['size']
+            self.osd.message('window mode')
 
         window.fullscreen = value
 
@@ -153,6 +186,7 @@ class Yuvist(GridLayout):
             if playlist[i][0] == playitem[0] and i > 0:
                 front.playitem = playlist[i-1][:]
                 front.state = 'play'
+                self.osd.message('prev video')
                 return
 
     def _on_next_video(self, front, *largs):
@@ -162,13 +196,24 @@ class Yuvist(GridLayout):
             if playlist[i][0] == playitem[0] and i < len(playlist)-1:
                 front.playitem = playlist[i+1][:]
                 front.state = 'play'
+                self.osd.message('next video')
                 return
+
+    def _on_prev_frame(self, front, *largs):
+        self.osd.message('prev 1 frame')
+
+    def _on_next_frame(self, front, *largs):
+        self.osd.message('next 1 frame')
+
+    def _on_play_pause(self, front, *largs):
+        self.osd.message(front.state)
 
     def _on_open_file(self, front, *largs):
         def confirm(path, filename):
             self.playpath = path
             front.source = join(path, filename)
             front.state = 'play'
+            self.osd.message('open file')
         window = self.get_parent_window()
         size = (window.size[0] - 160, window.size[1] - 100) if window else (700, 500)
         popup = OpenDialog(path=self.playpath, confirm=confirm, size=size)
@@ -178,6 +223,7 @@ class Yuvist(GridLayout):
         def confirm(format, yuv_size):
             front.playitem = [front.source, format, front.colorfmt, yuv_size, front.yuv_fps]
             front.state = 'play'
+            self.osd.message('play video')
         popup = YuvCfgDialog(format=front.format, yuv_size=front.yuv_size, confirm=confirm)
         popup.open()
 
@@ -185,6 +231,7 @@ class Yuvist(GridLayout):
         def confirm(playitem):
             front.playitem = playitem[:]
             front.state = 'play'
+            self.osd.message('play video')
         window = self.get_parent_window()
         size = (window.size[0] - 160, window.size[1] - 100) if window else (700, 500)
         popup = PlaylistDialog(playlist=self.playlist, confirm=confirm, size=size)
@@ -195,32 +242,32 @@ class Yuvist(GridLayout):
         self._keyboard = None
 
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
-        from kivy.utils import platform
-
-        if keycode[1] == '0' and 'meta' in modifiers:
-            return self._resize(size_hint=(0.5, 0.5))
         if keycode[1] == '1' and 'meta' in modifiers:
-            return self._resize(size_hint=(1.0, 1.0))
+            return self._resize(size_hint=(.5, .5))
         if keycode[1] == '2' and 'meta' in modifiers:
-            return self._resize(size_hint=(2.0, 2.0))
+            return self._resize(size_hint=(1., 1.))
         if keycode[1] == '3' and 'meta' in modifiers:
-            return self._resize(size_hint=(0.5, 0.5))
-        if keycode[1] == 'F' and 'meta' in modifiers:
-            return self._resize(size_hint=(0.5, 0.5))
+            return self._resize(size_hint=(2., 2.))
+        if keycode[1] == '4' and 'meta' in modifiers:
+            return self._resize(size_hint=(0., 0.))
 
+        if keycode[1] == 'f' and 'meta' in modifiers:
+            if self.allow_fullscreen:
+                self.fullscreen = not self.fullscreen
+            return True
         if keycode[1] == 'enter':
             if self.allow_fullscreen:
                 self.fullscreen = not self.fullscreen
             return True
 
-        if keycode[1] == 'up':
+        if keycode[1] == 'up' and 'meta' in modifiers:
             volume = self.front.volume
             volume += 0.1
             if volume > 1.0:
                 volume = 1.0
             self.front.volume = volume
             return True
-        if keycode[1] == 'down':
+        if keycode[1] == 'down' and 'meta' in modifiers:
             volume = self.front.volume
             volume -= 0.1
             if volume < 0.0:
@@ -238,10 +285,10 @@ class Yuvist(GridLayout):
             self.front.seek(1.)
             return True
 
-        if keycode[1] == 'left' and 'meta' in modifiers and 'alt' in modifiers:
+        if keycode[1] == 'left' and 'meta' in modifiers:
             self.front.dispatch('on_prev_video')
             return True
-        if keycode[1] == 'right' and 'meta' in modifiers and 'alt' in modifiers:
+        if keycode[1] == 'right' and 'meta' in modifiers:
             self.front.dispatch('on_next_video')
             return True
         if keycode[1] == '[':
@@ -264,20 +311,48 @@ class Yuvist(GridLayout):
             self.front.dispatch('on_config_playlist')
             return True
 
+        if keycode[1] == 'q' and 'meta' in modifiers:
+            app = App.get_running_app()
+            app.stop()
+            return True
+
         return True
 
     def _resize(self, size_hint=(1., 1.)):
-        window = self.get_root_window()
-        size   = self.video.resolution
-        ratio  = size[0] / float(size[1])
-        w, h   = 1920, 1080 #window._size
-        tw, th = int(size[0] * size_hint[0]), int(size[1] * size_hint[1]) + 62
+        if self.fullscreen:
+            return True
+
+        import pygame
+        w, h   = pygame.display.list_modes()[0]
+        pad_h  = 0 if self.fullscreen else self.front.height
+        size   = self.front.yuv_size
+        ratio  = float(size[0]) / float(size[1])
+        tw, th = int(size[0] * size_hint[0]), int(size[1] * size_hint[1])
+
+        if not self.fullscreen:
+            h -= pad_h + 44
+
+        if size_hint == (0., 0.):
+            tw, th = w, h
+
         iw = min(w, tw)
         ih = iw / ratio
         if ih > h:
             ih = min(h, th)
             iw = ih * ratio
-        window.size = int(iw), int(ih)
+
+        if not self.fullscreen:
+            window = self.get_parent_window()
+            window.size = int(iw), int(ih + pad_h)
+
+        if size_hint == (.5, .5):
+            self.osd.message('half size')
+        elif size_hint == (1., 1.):
+            self.osd.message('normal size')
+        elif size_hint == (2., 2.):
+            self.osd.message('double size')
+        elif size_hint == (.0, .0):
+            self.osd.message('fit to window')
         return True
 
     def _drop_file(filename):
@@ -295,11 +370,6 @@ class YuvistApp(App):
 
         super(YuvistApp, self).__init__(**kwargs)
 
-        import pygame
-        pygame.display.init()
-        info = pygame.display.Info()
-        self.desktop_size = [info.current_w, info.current_h]
-
         self.filename = kwargs.get('filename', '')
         self.format   = kwargs.get('format', 'yuv420')
         self.yuv_size = kwargs.get('yuv_size', [1920, 1080])
@@ -309,8 +379,7 @@ class YuvistApp(App):
         return Yuvist(source=self.filename,
                       format=self.format,
                       yuv_size=self.yuv_size,
-                      state=self.state,
-                      desktop_size=self.desktop_size)
+                      state=self.state)
 
 
 if __name__ == '__main__':

@@ -114,8 +114,8 @@
 
         RelativeLayout:
             x: root.x
-            size_hint: None, None
-            size: VOLUME_PANEL_WIDTH, BOTTOM_PANEL_HEIGHT
+            size_hint_x: None
+            width: VOLUME_PANEL_WIDTH
 
             ImageButton:
                 pos: VOLUME_MUTED_X, VOLUME_MUTED_Y
@@ -136,8 +136,8 @@
 
         RelativeLayout:
             center_x: int(root.center_x)
-            size_hint: None, None
-            size: PLAY_PANEL_WIDTH, BOTTOM_PANEL_HEIGHT
+            size_hint_x: None
+            width: PLAY_PANEL_WIDTH
 
             ImageButton:
                 pos: PREV_VIDEO_X, PREV_NEXT_Y
@@ -176,8 +176,8 @@
 
         RelativeLayout:
             right: root.right
-            size_hint: None, None
-            size: CONFIG_PANEL_WIDTH, BOTTOM_PANEL_HEIGHT
+            size_hint_x: None
+            width: CONFIG_PANEL_WIDTH
 
             ImageButton:
                 pos: CONFIG_YUVCFG_X, CONFIG_BUTTON_Y
