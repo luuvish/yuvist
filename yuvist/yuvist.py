@@ -38,8 +38,8 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.relativelayout import RelativeLayout
 
+from uix.messagebox import MessageBox
 from uix.frontpanel import FrontPanel
-from uix.osd import OnScreenDisplay
 from uix.dialog_open import OpenDialog
 from uix.dialog_yuv_cfg import YuvCfgDialog
 from uix.dialog_playlist import PlaylistDialog
@@ -48,7 +48,7 @@ from uix.dialog_playlist import PlaylistDialog
 Builder.load_string('''
 <Yuvist>:
     display: video
-    osd: osd
+    msgbox: msgbox
     front: front
 
     FloatLayout:
@@ -58,8 +58,8 @@ Builder.load_string('''
         height: root.height - self.y
         pos: (0, 0 if root.fullscreen else front.height)
 
-    OnScreenDisplay:
-        id: osd
+    MessageBox:
+        id: msgbox
         pos: 10, root.height - self.height - 10
 
     FrontPanel:
@@ -70,7 +70,7 @@ Builder.load_string('''
 class Yuvist(FloatLayout):
 
     popup            = ObjectProperty(None, allownone=True)
-    osd              = ObjectProperty(None)
+    msgbox           = ObjectProperty(None)
     front            = ObjectProperty(None)
     display          = ObjectProperty(None)
     fullscreen       = BooleanProperty(False)
@@ -97,6 +97,8 @@ class Yuvist(FloatLayout):
         Window.bind(on_dropfile=self._drop_file)
         self._keyboard = Window.request_keyboard(self._keyboard_closed, Window)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
+
+        Window.bind(on_motion=self._on_motion)
 
     def on_fullscreen(self, instance, value):
         window = self.get_parent_window()
@@ -138,7 +140,8 @@ class Yuvist(FloatLayout):
 
             import pygame
             window.size = pygame.display.list_modes()[0]
-            self.osd.show_message('fullscreen mode')
+            self.front.hide()
+            self.msgbox.show('fullscreen mode')
         else:
             state = self._fullscreen_state
             window.remove_widget(self)
@@ -152,7 +155,9 @@ class Yuvist(FloatLayout):
                 state['parent'].add_widget(self)
 
             window.size = state['size']
-            self.osd.show_message('window mode')
+            self.front.hide()
+            self.front.opacity = 1
+            self.msgbox.show('window mode')
 
         window.fullscreen = value
 
@@ -186,7 +191,7 @@ class Yuvist(FloatLayout):
             if playlist[i][0] == playitem[0] and i > 0:
                 front.playitem = playlist[i-1][:]
                 front.state = 'play'
-                self.osd.show_message('prev video')
+                self.msgbox.show('prev video')
                 return
 
     def _on_next_video(self, front, *largs):
@@ -196,25 +201,25 @@ class Yuvist(FloatLayout):
             if playlist[i][0] == playitem[0] and i < len(playlist)-1:
                 front.playitem = playlist[i+1][:]
                 front.state = 'play'
-                self.osd.show_message('next video')
+                self.msgbox.show('next video')
                 return
 
     def _on_prev_frame(self, front, *largs):
-        self.osd.show_message('prev 1 frame')
+        self.msgbox.show('prev 1 frame')
 
     def _on_next_frame(self, front, *largs):
-        self.osd.show_message('next 1 frame')
+        self.msgbox.show('next 1 frame')
 
     def _on_play_pause(self, front, *largs):
         state = 'pause' if front.state == 'play' else 'play'
-        self.osd.show_message(state)
+        self.msgbox.show(state)
 
     def _on_open_file(self, front, *largs):
         def confirm(path, filename):
             self.playpath = path
             front.source = join(path, filename)
             front.state = 'play'
-            self.osd.show_message('open file')
+            self.msgbox.show('open file')
         window = self.get_parent_window()
         size = (window.size[0] - 160, window.size[1] - 100) if window else (700, 500)
         popup = OpenDialog(path=self.playpath, confirm=confirm, size=size)
@@ -224,7 +229,7 @@ class Yuvist(FloatLayout):
         def confirm(format, yuv_size):
             front.playitem = [front.source, format, front.colorfmt, yuv_size, front.yuv_fps]
             front.state = 'play'
-            self.osd.show_message('play video')
+            self.msgbox.show('play video')
         popup = YuvCfgDialog(format=front.format, yuv_size=front.yuv_size, confirm=confirm)
         popup.open()
 
@@ -232,7 +237,7 @@ class Yuvist(FloatLayout):
         def confirm(playitem):
             front.playitem = playitem[:]
             front.state = 'play'
-            self.osd.show_message('play video')
+            self.msgbox.show('play video')
         window = self.get_parent_window()
         size = (window.size[0] - 160, window.size[1] - 100) if window else (700, 500)
         popup = PlaylistDialog(playlist=self.playlist, confirm=confirm, size=size)
@@ -347,19 +352,23 @@ class Yuvist(FloatLayout):
             window.size = int(iw), int(ih + pad_h)
 
         if size_hint == (.5, .5):
-            self.osd.show_message('half size')
+            self.msgbox.show('half size')
         elif size_hint == (1., 1.):
-            self.osd.show_message('normal size')
+            self.msgbox.show('normal size')
         elif size_hint == (2., 2.):
-            self.osd.show_message('double size')
+            self.msgbox.show('double size')
         elif size_hint == (.0, .0):
-            self.osd.show_message('fit to window')
+            self.msgbox.show('fit to window')
         return True
 
     def _drop_file(filename):
         print 'dropfile %s' % filename
         self.source = filename
         self.state = 'play'
+
+    def _on_motion(self, instance, etype, me):
+        if self.fullscreen:
+            self.front.show()
 
 
 class YuvistApp(App):

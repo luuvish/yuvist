@@ -26,6 +26,7 @@ from kivy.lang import Builder
 from kivy.resources import resource_find
 from kivy.properties import StringProperty, NumericProperty, BooleanProperty, \
         ObjectProperty, ListProperty, DictProperty, OptionProperty, ReferenceListProperty
+from kivy.animation import Animation
 from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.video import Video
@@ -81,10 +82,23 @@ class FrontPanel(GridLayout):
         self.register_event_type('on_config_playlist')
 
         self._video = None
+        self._anim  = None
 
         super(FrontPanel, self).__init__(**kwargs)
 
         self.bind(position=self._on_seektime, duration=self._on_seektime)
+
+    def show(self, duration=20):
+        self.hide()
+        self._anim  = Animation(opacity=1, d=1, t='in_out_expo')
+        self._anim += Animation(opacity=0, d=duration-1, t='in_out_expo')
+        self._anim.start(self)
+
+    def hide(self):
+        if self._anim is not None:
+            self._anim.cancel(self)
+            self._anim = None
+        self.opacity = 0
 
     def seek(self, percent):
         if not self._video:
