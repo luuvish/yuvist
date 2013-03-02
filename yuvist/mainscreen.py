@@ -293,14 +293,14 @@ class MainScreen(FloatLayout):
             controller.dispatch('on_fullscreen')
             return True
 
+        if keycode[1] == 'down' and 'meta' in modifiers and 'alt' in modifiers:
+            controller.volume = 0.0
+            return True
         if keycode[1] == 'up' and 'meta' in modifiers:
             controller.volume = min(controller.volume + .1, 1.)
             return True
         if keycode[1] == 'down' and 'meta' in modifiers:
             controller.volume = max(controller.volume - .1, 0.)
-            return True
-        if keycode[1] == 'down' and 'meta' in modifiers and 'alt' in modifiers:
-            controller.volume = 0.0
             return True
 
         if keycode[1] == 'home':

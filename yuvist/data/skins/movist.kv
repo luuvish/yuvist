@@ -63,11 +63,15 @@
     size_hint: None, None
     border: 0, 0, 0, 0
 
+<ImageToggle>:
+    size_hint: None, None
+    border: 0, 0, 0, 0
+
 <FrontPanel>:
-    volume_slider: volume
     cols: 1
     size_hint_y: None
     height: SEEK_PANEL_HEIGHT + BOTTOM_PANEL_HEIGHT
+    on_volume: if muted.state == 'normal': volume.value_normalized = root.volume
 
     BoxLayout:
         orientation: 'horizontal'
@@ -84,7 +88,7 @@
         Label:
             size_hint_x: None
             width: SEEK_TIME_WIDTH
-            text: '[size=10][color=444]%s[/color][/size]' % root.past_seektime
+            text: '[size=10][color=444]%s[/color][/size]' % root.pasttime
             markup: True
 
         SeekBar:
@@ -95,7 +99,7 @@
         Label:
             size_hint_x: None
             width: SEEK_TIME_WIDTH
-            text: '[size=10][color=444]-%s[/color][/size]' % root.next_seektime
+            text: '[size=10][color=444]-%s[/color][/size]' % root.nexttime
             markup: True
 
     FloatLayout:
@@ -114,12 +118,13 @@
             size_hint_x: None
             width: VOLUME_PANEL_WIDTH
 
-            ImageButton:
+            ImageToggle:
+                id: muted
                 pos: VOLUME_MUTED_X, VOLUME_MUTED_Y
                 size: BUTTON_18x17_SIZE
-                background_normal: IMAGE_VOLUME_MUTED if root.volume_muted or volume.value_normalized == 0 else IMAGE_VOLUME_033 if volume.value_normalized < .33 else IMAGE_VOLUME_066 if volume.value_normalized < .66 else IMAGE_VOLUME_100
-                background_down: self.background_normal
-                on_press: root.volume_muted = not root.volume_muted; root.volume = 0 if root.volume_muted else volume.value_normalized
+                background_normal: IMAGE_VOLUME_MUTED if volume.value_normalized == 0 else IMAGE_VOLUME_033 if volume.value_normalized < .33 else IMAGE_VOLUME_066 if volume.value_normalized < .66 else IMAGE_VOLUME_100
+                background_down: IMAGE_VOLUME_MUTED
+                on_state: root.volume = 0 if self.state == 'down' else volume.value_normalized
 
             VolumeSlider:
                 id: volume
@@ -129,7 +134,7 @@
                 background: IMAGE_VOLUME_SLIDER_TRACK
                 cursor: IMAGE_VOLUME_CURSOR_NORMAL if self.state == 'normal' else IMAGE_VOLUME_CURSOR_DOWN
                 value_normalized: 1.0
-                on_value_normalized: root.volume = 0 if root.volume_muted else self.value_normalized
+                on_value_normalized: root.volume = 0 if muted.state == 'down' else self.value_normalized
 
         RelativeLayout:
             center_x: int(root.center_x)

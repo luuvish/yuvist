@@ -199,6 +199,8 @@ class YuvVideo(Video):
         self.canvas.ask_update()
 
     def _on_eos(self, *largs):
+        self.duration = self._video.duration
+        self.position = self._video.position
         self.state = 'pause'
         self.eos = True
 

@@ -21,7 +21,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 __all__ = ('Controller', )
 
-
 from os.path import basename
 
 from kivy.resources import resource_find

@@ -24,11 +24,12 @@ from os.path import dirname, join
 
 from kivy.lang import Builder
 from kivy.properties import NumericProperty, StringProperty, \
-        ObjectProperty, BooleanProperty, OptionProperty
+        ObjectProperty, BooleanProperty, OptionProperty, AliasProperty
 from kivy.animation import Animation
 from kivy.uix.videoplayer import VideoPlayerProgressBar
 from kivy.uix.slider import Slider
 from kivy.uix.button import Button
+from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.gridlayout import GridLayout
 
 
@@ -57,11 +58,15 @@ Builder.load_file(join(dirname(__file__), '../data/skins/movist.kv'))
 
 class SeekBar(VideoPlayerProgressBar):
 
+    show_bubble = BooleanProperty(False)
+
     def __init__(self, **kwargs):
 
         super(SeekBar, self).__init__(**kwargs)
 
         self.bubble.size = (72,44)
+        if not self.show_bubble:
+            self.alpha = 0
 
     def _update_bubble(self, *l):
         seek = self.seek
@@ -78,12 +83,27 @@ class SeekBar(VideoPlayerProgressBar):
         self.bubble.center_x = self.x + seek * self.width
         self.bubble.y = self.top
 
+    def _showhide_bubble(self, instance, value):
+        if not self.show_bubble:
+            return
+        super(SeekBar, self)._showhide_bubble(instance, value)
+
 
 class VolumeSlider(Slider):
 
     state      = OptionProperty('normal', options=('normal', 'down'))
     background = StringProperty('atlas://data/images/defaulttheme/sliderh_background')
     cursor     = StringProperty('atlas://data/images/defaulttheme/slider_cursor')
+
+    def get_value_pos(self):
+        padding = self.padding
+        x = self.x
+        y = self.y
+        nval = self.value_normalized
+        if self.orientation == 'horizontal':
+            return (x + padding + nval * (self.width - 2 * padding), y)
+        else:
+            return (x, y + padding + nval * (self.height - 2 * padding))
 
     def set_value_pos(self, pos):
         padding = self.padding
@@ -99,25 +119,48 @@ class VolumeSlider(Slider):
                 self.value_normalized = 0
             else:
                 self.value_normalized = (y - self.y - padding) / float(self.height - 2 * padding)
+    value_pos = AliasProperty(get_value_pos, set_value_pos,
+                              bind=('x', 'y', 'width', 'height',
+                                    'min', 'max', 'value_normalized'))
+
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            touch.grab(self)
+            self.value_pos = touch.pos
+            self.state = 'down'
+            return True
+
+    def on_touch_move(self, touch):
+        if touch.grab_current == self:
+            self.value_pos = touch.pos
+            return True
+
+    def on_touch_up(self, touch):
+        if touch.grab_current == self:
+            self.value_pos = touch.pos
+            self.state = 'normal'
+            return True
 
 
 class ImageButton(Button):
     pass
 
 
+class ImageToggle(ToggleButton):
+    pass
+
+
 class FrontPanel(GridLayout):
 
-    past_seektime = StringProperty('00:00:00')
-    next_seektime = StringProperty('00:00:00')
-    volume_muted  = BooleanProperty(False)
-    volume_slider = ObjectProperty(None)
+    pasttime   = StringProperty('00:00:00')
+    nexttime   = StringProperty('00:00:00')
 
-    duration      = NumericProperty(-1)
-    position      = NumericProperty(0)
-    volume        = NumericProperty(1.0)
-    state         = OptionProperty('stop', options=('play', 'pause', 'stop'))
+    duration   = NumericProperty(-1)
+    position   = NumericProperty(0)
+    volume     = NumericProperty(1.0)
+    state      = OptionProperty('stop', options=('play', 'pause', 'stop'))
 
-    controller    = ObjectProperty(None, allownone=True)
+    controller = ObjectProperty(None, allownone=True)
 
     def __init__(self, **kwargs):
         self._anim = None
@@ -142,8 +185,10 @@ class FrontPanel(GridLayout):
         self.controller.seek(percent)
 
     def dispatch(self, event_type, *largs):
+
         if self.is_event_type(event_type):
             return super(FrontPanel, self).dispatch(event_type, *largs)
+
         controller = self.controller
         if controller is not None and controller.is_event_type(event_type):
             return controller.dispatch(event_type, *largs)
@@ -165,8 +210,8 @@ class FrontPanel(GridLayout):
     def _on_seektime(self, *largs):
 
         if self.controller is None or self.duration == 0:
-            self.past_seektime = '00:00:00'
-            self.next_seektime = '00:00:00'
+            self.pasttime = '00:00:00'
+            self.nexttime = '00:00:00'
             return
 
         def seektime(seek):
@@ -176,5 +221,5 @@ class FrontPanel(GridLayout):
             return '%02d:%02d:%02d' % (hours, minutes, seconds)
 
         seek = self.position / float(self.duration)
-        self.past_seektime = seektime(self.duration * seek)
-        self.next_seektime = seektime(self.duration * (1. - seek))
+        self.pasttime = seektime(self.duration * seek)
+        self.nexttime = seektime(self.duration * (1. - seek))
