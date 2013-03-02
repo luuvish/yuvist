@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-__all__ = ('PlaylistDialog', )
+__all__ = ('PlaylistPopup', )
 
 from os.path import basename
 
@@ -109,13 +109,13 @@ class PlaylistLayout(BoxLayout):
         self.popup.dismiss()
 
 
-class PlaylistDialog(Popup):
+class PlaylistPopup(Popup):
 
     confirm = ObjectProperty(None)
 
     def __init__(self, **kwargs):
 
-        super(PlaylistDialog, self).__init__()
+        super(PlaylistPopup, self).__init__()
 
         playlist       = kwargs.get('playlist', [])
 

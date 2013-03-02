@@ -1,8 +1,5 @@
 #:kivy 1.0
 
-#:import SeekBar uix.seekbar
-#:import VolumeSlider uix.volumeslider
-
 #:set IMAGE_VOLUME_MUTED           'data/skins/movist/MainVolumeMute.tiff'
 #:set IMAGE_VOLUME_033             'data/skins/movist/MainVolume1.tiff'
 #:set IMAGE_VOLUME_066             'data/skins/movist/MainVolume2.tiff'
@@ -184,11 +181,11 @@
                 size: BUTTON_20x18_SIZE
                 background_normal: IMAGE_CONFIG_YUVCFG_NORMAL
                 background_down: IMAGE_CONFIG_YUVCFG_DOWN
-                on_press: root.dispatch('on_config_yuv_cfg')
+                on_press: root.dispatch('on_config_yuvparam')
 
             ImageButton:
                 pos: CONFIG_PLAYLIST_X, CONFIG_BUTTON_Y
                 size: BUTTON_20x18_SIZE
                 background_normal: IMAGE_CONFIG_PLAYLIST_NORMAL
                 background_down: IMAGE_CONFIG_PLAYLIST_DOWN
-                on_press: root.dispatch('on_config_playlist')
+                on_press: root.dispatch('on_select_playlist')

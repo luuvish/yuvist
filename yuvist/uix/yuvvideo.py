@@ -24,8 +24,8 @@ from kivy.lang import Builder
 from kivy.clock import Clock
 from kivy.graphics import RenderContext
 from kivy.resources import resource_find
-from kivy.properties import StringProperty, NumericProperty, \
-        ObjectProperty, ListProperty, OptionProperty
+from kivy.properties import NumericProperty, StringProperty, ListProperty, \
+        ObjectProperty, OptionProperty
 from kivy.uix.video import Video
 
 from core.video import YUV_CHROMA_FORMAT, OUT_COLOR_FORMAT
@@ -197,7 +197,6 @@ class YuvVideo(Video):
         self.texture1 = self._video.texture[1]
         self.texture  = self._video.texture[0]
         self.canvas.ask_update()
-        #print('FPS: %2.4f (real draw: %d)' % (Clock.get_fps(), Clock.get_rfps()))
 
     def _on_eos(self, *largs):
         self.state = 'pause'

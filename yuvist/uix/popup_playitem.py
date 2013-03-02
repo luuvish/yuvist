@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-__all__ = ('OpenDialog', )
+__all__ = ('PlayitemPopup', )
 
 from kivy.lang import Builder
 from kivy.properties import StringProperty, ObjectProperty
@@ -27,7 +27,7 @@ from kivy.uix.popup import Popup
 
 
 Builder.load_string('''
-<OpenLayout>:
+<PlayitemLayout>:
     BoxLayout:
         orientation: 'vertical'
         pos: root.pos
@@ -52,7 +52,7 @@ Builder.load_string('''
 ''')
 
 
-class OpenLayout(FloatLayout):
+class PlayitemLayout(FloatLayout):
 
     popup = ObjectProperty(None)
     path  = StringProperty('.')
@@ -67,13 +67,13 @@ class OpenLayout(FloatLayout):
         self.popup.dismiss()
 
 
-class OpenDialog(Popup):
+class PlayitemPopup(Popup):
 
     confirm = ObjectProperty(None)
 
     def __init__(self, **kwargs):
 
-        super(OpenDialog, self).__init__()
+        super(PlayitemPopup, self).__init__()
 
         path           = kwargs.get('path', '.')
 
@@ -82,4 +82,4 @@ class OpenDialog(Popup):
         self.title     = kwargs.get('title', 'Open Image File')
         self.size_hint = kwargs.get('size_hint', (None, None))
         self.size      = kwargs.get('size', (700, 500))
-        self.content   = OpenLayout(popup=self, path=path)
+        self.content   = PlayitemLayout(popup=self, path=path)

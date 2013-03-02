@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 __all__ = ('MessageBox', )
 
 from kivy.lang import Builder
-from kivy.properties import StringProperty, NumericProperty, ListProperty
+from kivy.properties import NumericProperty, StringProperty, ListProperty
 from kivy.animation import Animation
 from kivy.uix.relativelayout import RelativeLayout
 

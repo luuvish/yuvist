@@ -23,21 +23,82 @@ __all__ = ('FrontPanel', )
 from os.path import dirname, join
 
 from kivy.lang import Builder
-from kivy.resources import resource_find
-from kivy.properties import StringProperty, NumericProperty, BooleanProperty, \
-        ObjectProperty, ListProperty, DictProperty, OptionProperty, ReferenceListProperty
+from kivy.properties import NumericProperty, StringProperty, \
+        ObjectProperty, BooleanProperty, OptionProperty
 from kivy.animation import Animation
+from kivy.uix.videoplayer import VideoPlayerProgressBar
+from kivy.uix.slider import Slider
 from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
-from kivy.uix.video import Video
 
-from uix.yuvvideo import YuvVideo
 
-from core.video import YUV_CHROMA_FORMAT
-from core.video import OUT_COLOR_FORMAT
+Builder.load_string('''
+<VolumeSlider>:
+    padding: 7
+    orientation: 'horizontal'
 
+    canvas:
+        Clear
+        Color:
+            rgb: 1, 1, 1
+        BorderImage:
+            border: 0, 0, 0, 0
+            pos: int(self.x), int(self.center_y - 1)
+            size: 78, 5
+            source: self.background
+        Rectangle:
+            pos: int(self.value_pos[0] - 7), int(self.center_y - 7)
+            size: 14, 14
+            source: self.cursor
+''')
 
 Builder.load_file(join(dirname(__file__), '../data/skins/movist.kv'))
+
+
+class SeekBar(VideoPlayerProgressBar):
+
+    def __init__(self, **kwargs):
+
+        super(SeekBar, self).__init__(**kwargs)
+
+        self.bubble.size = (72,44)
+
+    def _update_bubble(self, *l):
+        seek = self.seek
+        if self.seek is None:
+            if self.video.duration == 0:
+                seek = 0
+            else:
+                seek = self.video.position / self.video.duration
+        d = self.video.duration * seek
+        hours   = int(d / 3600)
+        minutes = int(d / 60) - (hours * 60)
+        seconds = int(d) - (hours * 3600 + minutes * 60)
+        self.bubble_label.text = '%02d:%02d:%02d' % (hours, minutes, seconds)
+        self.bubble.center_x = self.x + seek * self.width
+        self.bubble.y = self.top
+
+
+class VolumeSlider(Slider):
+
+    state      = OptionProperty('normal', options=('normal', 'down'))
+    background = StringProperty('atlas://data/images/defaulttheme/sliderh_background')
+    cursor     = StringProperty('atlas://data/images/defaulttheme/slider_cursor')
+
+    def set_value_pos(self, pos):
+        padding = self.padding
+        x = min(self.right - padding, max(pos[0], self.x + padding))
+        y = min(self.top - padding, max(pos[1], self.y + padding))
+        if self.orientation == 'horizontal':
+            if self.width == 0:
+                self.value_normalized = 0
+            else:
+                self.value_normalized = (x - self.x - padding) / float(self.width - 2 * padding)
+        else:
+            if self.height == 0:
+                self.value_normalized = 0
+            else:
+                self.value_normalized = (y - self.y - padding) / float(self.height - 2 * padding)
 
 
 class ImageButton(Button):
@@ -51,41 +112,16 @@ class FrontPanel(GridLayout):
     volume_muted  = BooleanProperty(False)
     volume_slider = ObjectProperty(None)
 
-    source        = StringProperty('')
     duration      = NumericProperty(-1)
     position      = NumericProperty(0)
     volume        = NumericProperty(1.0)
     state         = OptionProperty('stop', options=('play', 'pause', 'stop'))
-    play          = BooleanProperty(False)
-    options       = DictProperty({})
 
-    format        = OptionProperty(YUV_CHROMA_FORMAT[1], options=YUV_CHROMA_FORMAT)
-    colorfmt      = OptionProperty(OUT_COLOR_FORMAT[1], options=OUT_COLOR_FORMAT)
-    yuv_size      = ListProperty([1920, 1080])
-    yuv_fps       = NumericProperty(30.)
-    playitem      = ReferenceListProperty(source, format, colorfmt, yuv_size, yuv_fps)
+    controller    = ObjectProperty(None, allownone=True)
 
     def __init__(self, **kwargs):
-
-        self.register_event_type('on_load_video')
-        self.register_event_type('on_prev_video')
-        self.register_event_type('on_next_video')
-        self.register_event_type('on_prev_frame')
-        self.register_event_type('on_next_frame')
-        self.register_event_type('on_play_pause')
-
-        self.register_event_type('on_fullscreen')
-        self.register_event_type('on_exit')
-
-        self.register_event_type('on_open_file')
-        self.register_event_type('on_config_yuv_cfg')
-        self.register_event_type('on_config_playlist')
-
-        self._video = None
-        self._anim  = None
-
+        self._anim = None
         super(FrontPanel, self).__init__(**kwargs)
-
         self.bind(position=self._on_seektime, duration=self._on_seektime)
 
     def show(self, duration=20):
@@ -101,114 +137,34 @@ class FrontPanel(GridLayout):
         self.opacity = 0
 
     def seek(self, percent):
-        if not self._video:
+        if self.controller is None:
             return
-        self._video.seek(percent)
+        self.controller.seek(percent)
 
-    def on_load_video(self, *largs):
-        pass
+    def dispatch(self, event_type, *largs):
+        if self.is_event_type(event_type):
+            return super(FrontPanel, self).dispatch(event_type, *largs)
+        controller = self.controller
+        if controller is not None and controller.is_event_type(event_type):
+            return controller.dispatch(event_type, *largs)
 
-    def on_prev_video(self, *largs):
-        pass
+    def on_controller(self, instance, value):
 
-    def on_next_video(self, *largs):
-        pass
-
-    def on_prev_frame(self, *largs):
-        if self.duration == 0:
-            return
-        step = 1 / float(self.yuv_fps) if self.yuv_fps != 0. else 1.
-        seek = (self.position - step) / float(self.duration)
-        self.seek(seek)
-
-    def on_next_frame(self, *largs):
-        if self.duration == 0:
-            return
-        step = 1 / float(self.yuv_fps) if self.yuv_fps != 0. else 1.
-        seek = (self.position + step) / float(self.duration)
-        self.seek(seek)
-
-    def on_play_pause(self, *largs):
-        if not self.source:
-            self.dispatch('on_open_file')
+        controller = value
+        if controller is None:
             return
 
-        if self.state == 'play':
-            self.state = 'pause'
-        else:
-            self.state = 'play'
+        controller.bind(state=self.setter('state'),
+                        duration=self.setter('duration'),
+                        position=self.setter('position'),
+                        volume=self.setter('volume'))
 
-    def on_fullscreen(self, *largs):
-        pass
-
-    def on_exit(self, *largs):
-        pass
-
-    def on_open_file(self, *largs):
-        pass
-
-    def on_config_yuv_cfg(self, *largs):
-        pass
-
-    def on_config_playlist(self, *largs):
-        pass
-
-    def on_state(self, instance, value):
-        if not self._video:
-            return
-        self._video.state = value
-
-    def on_play(self, instance, value):
-        value = 'play' if value else 'stop'
-        return self.on_state(instance, value)
-
-    def on_volume(self, instance, value):
-        if not self._video:
-            return
-        self._video.volume = value
-
-    def on_playitem(self, instance, value):
-
-        if self._video is not None:
-            self._video.state = 'stop'
-            self._video.unbind(on_load=self._on_load_video,
-                               texture=self._on_load_video,
-                               state=self.setter('state'),
-                               duration=self.setter('duration'),
-                               position=self.setter('position'),
-                               volume=self.setter('volume'))
-            self._video = None
-
-        filename = resource_find(self.source)
-        if filename is None:
-            return
-
-        cls = YuvVideo if filename.lower().endswith('.yuv') else Video
-        self._video = cls(format=self.format,
-                          colorfmt=self.colorfmt,
-                          yuv_size=self.yuv_size,
-                          yuv_fps=self.yuv_fps,
-                          source=filename,
-                          state=self.state,
-                          volume=self.volume,
-                          pos_hint={'x':0, 'y':0},
-                          **self.options)
-
-        self._video.bind(on_load=self._on_load_video,
-                         texture=self._on_load_video,
-                         state=self.setter('state'),
-                         duration=self.setter('duration'),
-                         position=self.setter('position'),
-                         volume=self.setter('volume'))
-
-    def _on_load_video(self, *largs):
-        self.dispatch('on_load_video', self.playitem)
-        if self._video is not None:
-            self._video.unbind(texture=self._on_load_video)
+        self.bind(state=controller.setter('state'),
+                  volume=controller.setter('volume'))
 
     def _on_seektime(self, *largs):
 
-        if not self._video or self.duration == 0:
+        if self.controller is None or self.duration == 0:
             self.past_seektime = '00:00:00'
             self.next_seektime = '00:00:00'
             return

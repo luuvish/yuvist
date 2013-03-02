@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-__all__ = ('YuvCfgDialog', )
+__all__ = ('YuvParamPopup', )
 
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty, OptionProperty, ListProperty
@@ -111,7 +111,7 @@ Builder.load_string('''
 <YuvSizeDropDown>:
     max_height: 200
 
-<YuvCfgLayout>:
+<YuvParamLayout>:
     orientation: 'vertical'
 
     BoxLayout:
@@ -288,7 +288,7 @@ class YuvSizeDropDown(DropDown):
                 self.height = win.height - wtop
 
 
-class YuvCfgLayout(BoxLayout):
+class YuvParamLayout(BoxLayout):
 
     option_cls   = ObjectProperty(YuvSizeOption)
     dropdown_cls = ObjectProperty(YuvSizeDropDown)
@@ -312,13 +312,13 @@ class YuvCfgLayout(BoxLayout):
             return False
 
 
-class YuvCfgDialog(Popup):
+class YuvParamPopup(Popup):
 
     confirm = ObjectProperty(None)
 
     def __init__(self, **kwargs):
 
-        super(YuvCfgDialog, self).__init__()
+        super(YuvParamPopup, self).__init__()
 
         format         = kwargs.get('format', YUV_CHROMA_FORMAT[1])
         yuv_size       = kwargs.get('yuv_size', [0, 0])
@@ -328,4 +328,4 @@ class YuvCfgDialog(Popup):
         self.title     = kwargs.get('title', 'Configuration YUV image')
         self.size_hint = kwargs.get('size_hint', (None, None))
         self.size      = kwargs.get('size', (400, 400))
-        self.content   = YuvCfgLayout(popup=self, format=format, yuv_size=yuv_size)
+        self.content   = YuvParamLayout(popup=self, format=format, yuv_size=yuv_size)
