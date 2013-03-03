@@ -78,7 +78,8 @@ class MainScreen(FloatLayout):
 
         super(MainScreen, self).__init__(**kwargs)
 
-        self.controller = Controller(display=self.display, playlist=self.playlist)
+        self.controller = Controller(display=self.display,
+                                     playlist=self.playlist)
         self.controller.bind(message=self._on_message,
                              on_fullscreen=self._on_fullscreen,
                              on_customsize=self._on_customsize,

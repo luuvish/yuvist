@@ -20,44 +20,68 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 
-__version__ = '0.9.2'
+__version__ = '0.10.0'
 
+
+import sys
+yuvist_args = sys.argv[1:]
+sys.argv = sys.argv[:1]
 
 import kivy
 kivy.require('1.5.1')
 
 from kivy.app import App
 
+from command import Command
 from mainscreen import MainScreen
 
 
 class YuvistApp(App):
 
-    title = 'Yuvist-' + __version__
-    icon  = 'data/images/yuvist.png'
+    title   = 'Yuvist-' + __version__
+    icon    = 'data/images/yuvist.png'
+    command = []
 
     def __init__(self, **kwargs):
-
         super(YuvistApp, self).__init__(**kwargs)
-
-        self.filename = kwargs.get('filename', '')
-        self.format   = kwargs.get('format', 'yuv420')
-        self.yuv_size = kwargs.get('yuv_size', [1920, 1080])
-        self.state    = kwargs.get('state', 'pause')
+        self.command = kwargs.get('command', [])
 
     def build(self):
-        return MainScreen(source=self.filename,
-                          format=self.format,
-                          yuv_size=self.yuv_size,
-                          state=self.state)
+        return MainScreen()
+
+    def on_start(self):
+
+        command = Command().parse(self.command)
+
+        controller = self.root.controller
+
+        size_hint = command.get('size_hint', (None, None))
+        fullscreen = command.get('fullscreen', False)
+        if fullscreen:
+            controller.dispatch('on_fullscreen')
+        elif size_hint != (None, None):
+            controller.dispatch('on_customsize', yuv_size, size_hint)
+
+        format   = command.get('format',   controller.format)
+        colorfmt = command.get('colorfmt', controller.colorfmt)
+        yuv_size = command.get('yuv_size', controller.yuv_size)
+        yuv_fps  = command.get('yuv_fps',  controller.yuv_fps)
+
+        playitem = command.get('playitem', [])
+
+        for filename in playitem:
+            playitem = [filename, format, colorfmt, yuv_size, yuv_fps]
+            controller.playlist.append(playitem)
+
+        controller.volume = command.get('volume', controller.volume)
+        if len(controller.playlist) > 0:
+            controller.playitem = controller.playlist[0]
+            controller.state = command.get('state',  controller.state)
+        else:
+            controller.playitem = ['', format, colorfmt, yuv_size, yuv_fps]
 
 
 if __name__ == '__main__':
 
-    print("Kivy YUV Image Viewer")
-    print("Copyright (C) 2012 Luuvish <luuvish@gmail.com>")
-
-    import sys
-    filename = sys.argv[1] if len(sys.argv) > 1 else ''
-    app = YuvistApp(filename=filename)
+    app = YuvistApp(command=yuvist_args)
     app.run()

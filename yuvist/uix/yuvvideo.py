@@ -34,6 +34,8 @@ from core.video.video_yuv import VideoYuv
 
 Builder.load_string('''
 <YuvVideo>:
+    allow_stretch: True
+
     canvas:
         Color:
             rgba: self.color
