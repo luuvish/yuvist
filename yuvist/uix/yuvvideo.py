@@ -28,8 +28,8 @@ from kivy.properties import NumericProperty, StringProperty, ListProperty, \
         ObjectProperty, OptionProperty
 from kivy.uix.video import Video
 
-from core.video import YUV_CHROMA_FORMAT, OUT_COLOR_FORMAT
-from core.video.video_yuv import VideoYuv
+from yuvist.core.video import YUV_CHROMA_FORMAT, OUT_COLOR_FORMAT
+from yuvist.core.video.video_yuv import VideoYuv
 
 
 Builder.load_string('''

@@ -27,8 +27,8 @@ from threading import Lock
 from kivy.clock import Clock
 from kivy.event import EventDispatcher
 
-from . import YUV_CHROMA_FORMAT, YUV_CHROMA_SUBPIXEL, OUT_COLOR_FORMAT
-from .convert_yuv import ConvertYuv
+from yuvist.core.video import YUV_CHROMA_FORMAT, YUV_CHROMA_SUBPIXEL, OUT_COLOR_FORMAT
+from yuvist.core.video.convert_yuv import ConvertYuv
 
 
 class LoaderYuv(EventDispatcher):

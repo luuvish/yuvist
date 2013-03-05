@@ -19,39 +19,34 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-
-__version__ = '0.10.0'
-
-
-import sys
-yuvist_args = sys.argv[1:]
-sys.argv = sys.argv[:1]
-
-import kivy
-kivy.require('1.5.1')
+import yuvist
 
 from kivy.app import App
 
-from command import Command
-from mainscreen import MainScreen
+from yuvist.command import Command
+from yuvist.mainscreen import MainScreen
 
 
 class YuvistApp(App):
 
-    title   = 'Yuvist-' + __version__
+    title   = 'Yuvist-' + yuvist.__version__
     icon    = 'data/images/yuvist.png'
-    command = []
+    command = None
 
     def __init__(self, **kwargs):
         super(YuvistApp, self).__init__(**kwargs)
-        self.command = kwargs.get('command', [])
+        self.command = kwargs.get('command', None)
 
     def build(self):
         return MainScreen()
 
     def on_start(self):
 
-        command = Command().parse(self.command)
+        command = self.command
+        if type(command) is list:
+            command = Command().parse(command)
+        if command is None:
+            command = {}
 
         controller = self.root.controller
 
@@ -83,5 +78,6 @@ class YuvistApp(App):
 
 if __name__ == '__main__':
 
-    app = YuvistApp(command=yuvist_args)
+    import sys
+    app = YuvistApp(command=sys.argv[1:])
     app.run()

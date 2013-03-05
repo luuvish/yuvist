@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 __all__ = ('ConvertYuv', )
 
-from . import YUV_CHROMA_FORMAT, YUV_CHROMA_SUBPIXEL
+from yuvist.core.video import YUV_CHROMA_FORMAT, YUV_CHROMA_SUBPIXEL
 
 
 class ConvertYuv(object):

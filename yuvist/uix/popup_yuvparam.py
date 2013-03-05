@@ -27,11 +27,11 @@ from kivy.uix.dropdown import DropDown
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
 
-from core.video import YUV_CHROMA_FORMAT
+from yuvist.core.video import YUV_CHROMA_FORMAT
 
 
 Builder.load_string('''
-#:import YUV_CHROMA_FORMAT core.video.YUV_CHROMA_FORMAT
+#:import YUV_CHROMA_FORMAT yuvist.core.video.YUV_CHROMA_FORMAT
 
 #:set YUV_SIZE_LIST (            \
     (( 128,   96), 'SQCIF'),     \

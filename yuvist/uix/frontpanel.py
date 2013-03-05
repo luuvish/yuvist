@@ -23,6 +23,7 @@ __all__ = ('FrontPanel', )
 from os.path import dirname, join
 
 from kivy.lang import Builder
+from kivy.resources import resource_find
 from kivy.properties import NumericProperty, StringProperty, \
         ObjectProperty, BooleanProperty, OptionProperty, AliasProperty
 from kivy.animation import Animation
@@ -53,7 +54,7 @@ Builder.load_string('''
             source: self.cursor
 ''')
 
-Builder.load_file(join(dirname(__file__), '../data/skins/movist.kv'))
+Builder.load_file(resource_find('data/skins/movist.kv'))
 
 
 class SeekBar(VideoPlayerProgressBar):

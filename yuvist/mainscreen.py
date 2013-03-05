@@ -21,7 +21,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 __all__ = ('MainScreen', )
 
-
 from os.path import join
 
 from kivy.lang import Builder
@@ -30,12 +29,12 @@ from kivy.properties import StringProperty, ListProperty, \
         ObjectProperty, BooleanProperty
 from kivy.uix.floatlayout import FloatLayout
 
-from uix.messagebox import MessageBox
-from uix.frontpanel import FrontPanel
-from uix.controller import Controller
-from uix.popup_playitem import PlayitemPopup
-from uix.popup_playlist import PlaylistPopup
-from uix.popup_yuvparam import YuvParamPopup
+from yuvist.uix.messagebox import MessageBox
+from yuvist.uix.frontpanel import FrontPanel
+from yuvist.uix.controller import Controller
+from yuvist.uix.popup_playitem import PlayitemPopup
+from yuvist.uix.popup_playlist import PlaylistPopup
+from yuvist.uix.popup_yuvparam import YuvParamPopup
 
 
 Builder.load_string('''

@@ -31,10 +31,8 @@ from kivy.properties import NumericProperty, StringProperty, ListProperty, \
         OptionProperty, ReferenceListProperty, DictProperty
 from kivy.uix.video import Video
 
-from uix.yuvvideo import YuvVideo
-
-from core.video import YUV_CHROMA_FORMAT
-from core.video import OUT_COLOR_FORMAT
+from yuvist.core.video import YUV_CHROMA_FORMAT, OUT_COLOR_FORMAT
+from yuvist.uix.yuvvideo import YuvVideo
 
 
 class Controller(EventDispatcher):

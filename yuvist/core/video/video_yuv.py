@@ -23,8 +23,8 @@ __all__ = ('VideoYuv', )
 from kivy.core.video import VideoBase
 from kivy.graphics.texture import Texture
 
-from . import YUV_CHROMA_FORMAT, OUT_COLOR_FORMAT
-from loader_yuv import LoaderYuv
+from yuvist.core.video import YUV_CHROMA_FORMAT, OUT_COLOR_FORMAT
+from yuvist.core.video.loader_yuv import LoaderYuv
 
 
 class VideoYuv(VideoBase):
