@@ -21,9 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 __all__ = ('YuvVideo', )
 
 from kivy.lang import Builder
-from kivy.clock import Clock
-from kivy.graphics import RenderContext
 from kivy.resources import resource_find
+from kivy.graphics import RenderContext
 from kivy.properties import NumericProperty, StringProperty, ListProperty, \
         ObjectProperty, OptionProperty
 from kivy.uix.video import Video
@@ -39,46 +38,50 @@ Builder.load_string('''
     canvas:
         Color:
             rgba: self.color
+        BindTexture:
+            texture: self.textures[2]
+            index: 3
+        BindTexture:
+            texture: self.textures[1]
+            index: 2
+        BindTexture:
+            texture: self.textures[0]
+            index: 1
         Rectangle:
-            texture: self.texture
             size: self.norm_image_size
             pos: self.center_x - self.norm_image_size[0] / 2., self.center_y - self.norm_image_size[1] / 2.
-        BindTexture:
-            texture: self.texture1
-            index: 1
-        BindTexture:
-            texture: self.texture2
-            index: 2
 ''')
 
 
 class YuvVideo(Video):
 
     FS_CONVERT_RGB = '''$HEADER$
-    uniform sampler2D texture1;
-    uniform sampler2D texture2;
+    uniform sampler2D tex_y;
+    uniform sampler2D tex_u;
+    uniform sampler2D tex_v;
 
     void main(void) {
         float r, g, b;
 
-        r = texture2D(texture0, tex_coord0).r;
-        g = texture2D(texture0, tex_coord0).g;
-        b = texture2D(texture0, tex_coord0).b;
+        r = texture2D(tex_y, tex_coord0).r;
+        g = texture2D(tex_y, tex_coord0).g;
+        b = texture2D(tex_y, tex_coord0).b;
 
         gl_FragColor = vec4(r, g, b, 1.0);
     }
     '''
 
     FS_CONVERT_YUV = '''$HEADER$
-    uniform sampler2D texture1;
-    uniform sampler2D texture2;
+    uniform sampler2D tex_y;
+    uniform sampler2D tex_u;
+    uniform sampler2D tex_v;
 
     void main(void) {
         float r, g, b, y, u, v;
 
-        y = texture2D(texture0, tex_coord0).s;
-        u = texture2D(texture1, tex_coord0).s;
-        v = texture2D(texture2, tex_coord0).s;
+        y = texture2D(tex_y, tex_coord0).s;
+        u = texture2D(tex_u, tex_coord0).s;
+        v = texture2D(tex_v, tex_coord0).s;
 
         y = 1.1643 * (y - 0.0625);
         u = u - 0.5;
@@ -93,13 +96,14 @@ class YuvVideo(Video):
     '''
 
     FS_CONVERT_MONO = '''$HEADER$
-    uniform sampler2D texture1;
-    uniform sampler2D texture2;
+    uniform sampler2D tex_y;
+    uniform sampler2D tex_u;
+    uniform sampler2D tex_v;
 
     void main(void) {
         float y;
 
-        y = texture2D(texture0, tex_coord0).s;
+        y = texture2D(tex_y, tex_coord0).s;
         y = 1.1643 * (y - 0.0625);
 
         gl_FragColor = vec4(y, y, y, 1.0);
@@ -107,8 +111,7 @@ class YuvVideo(Video):
     '''
 
     fs       = StringProperty(None)
-    texture1 = ObjectProperty(None, allownone=True)
-    texture2 = ObjectProperty(None, allownone=True)
+    textures = ListProperty([None, None, None])
 
     format   = OptionProperty(YUV_CHROMA_FORMAT[1], options=YUV_CHROMA_FORMAT)
     colorfmt = OptionProperty(OUT_COLOR_FORMAT[1], options=OUT_COLOR_FORMAT)
@@ -120,8 +123,9 @@ class YuvVideo(Video):
         self.register_event_type('on_load')
 
         self.canvas = RenderContext(fs=self.FS_CONVERT_YUV)
-        self.canvas['texture1'] = 1
-        self.canvas['texture2'] = 2
+        self.canvas['tex_y'] = 1
+        self.canvas['tex_u'] = 2
+        self.canvas['tex_v'] = 3
 
         super(YuvVideo, self).__init__(**kwargs)
 
@@ -166,9 +170,8 @@ class YuvVideo(Video):
             self._video.stop()
         if not self.source:
             self._video   = None
+            self.textures = [None, None, None]
             self.texture  = None
-            self.texture1 = None
-            self.texture2 = None
         else:
             filename = self.source
             if filename.split(':')[0] not in (
@@ -195,8 +198,7 @@ class YuvVideo(Video):
     def _on_video_frame(self, *largs):
         self.duration = self._video.duration
         self.position = self._video.position
-        self.texture2 = self._video.texture[2]
-        self.texture1 = self._video.texture[1]
+        self.textures = self._video.texture
         self.texture  = self._video.texture[0]
         self.canvas.ask_update()
 

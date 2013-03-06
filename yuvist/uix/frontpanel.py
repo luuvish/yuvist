@@ -169,9 +169,12 @@ class FrontPanel(GridLayout):
         self.bind(position=self._on_seektime, duration=self._on_seektime)
 
     def show(self, duration=20):
-        self.hide()
+        if self._anim is not None:
+            self._anim.cancel(self)
+            self._anim = None
         self._anim  = Animation(opacity=1, d=1, t='in_out_expo')
-        self._anim += Animation(opacity=0, d=duration-1, t='in_out_expo')
+        self._anim += Animation(opacity=1, d=max(1, duration-4), t='linear')
+        self._anim += Animation(opacity=0, d=max(1, duration-7), t='in_out_expo')
         self._anim.start(self)
 
     def hide(self):
@@ -193,6 +196,21 @@ class FrontPanel(GridLayout):
         controller = self.controller
         if controller is not None and controller.is_event_type(event_type):
             return controller.dispatch(event_type, *largs)
+
+    def on_touch_down(self, touch):
+        if self.opacity < .8:
+            return True
+        return super(FrontPanel, self).on_touch_down(touch)
+
+    def on_touch_move(self, touch):
+        if self.opacity < .8:
+            return True
+        return super(FrontPanel, self).on_touch_move(touch)
+
+    def on_touch_up(self, touch):
+        if self.opacity < .8:
+            return True
+        return super(FrontPanel, self).on_touch_up(touch)
 
     def on_controller(self, instance, value):
 

@@ -218,13 +218,15 @@ class Controller(EventDispatcher):
 
         source, format, colorfmt, yuv_size, yuv_fps = self.playitem
 
+        title = '%s' % basename(source)
+        if source.lower().endswith('.yuv'):
+            title += ' %s:%s@%2.f' % (
+                '%dx%d' % tuple(yuv_size),
+                format.upper(),
+                yuv_fps
+            )
         window = EventLoop.window
-        window.title = '%s %s:%s@%2.f' % (
-            basename(source),
-            '%dx%d' % tuple(yuv_size),
-            format.upper(),
-            yuv_fps
-        )
+        window.title = title
 
         playlist = self.playlist[:]
         for playitem in playlist:

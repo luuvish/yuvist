@@ -55,7 +55,7 @@ class MessageBox(RelativeLayout):
         self.hide()
         self.text = text
         self._anim  = Animation(opacity=1, d=1, t='in_out_expo')
-        self._anim += Animation(opacity=0, d=duration-1, t='in_out_expo')
+        self._anim += Animation(opacity=0, d=max(1, duration-1), t='in_out_expo')
         self._anim.start(self)
 
     def hide(self):
