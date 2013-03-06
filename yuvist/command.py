@@ -22,6 +22,7 @@ __all__ = ('Command', )
 
 from argparse import ArgumentParser
 
+import yuvist
 from yuvist.core.video import YUV_CHROMA_FORMAT, OUT_COLOR_FORMAT
 
 

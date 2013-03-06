@@ -23,6 +23,8 @@ __all__ = ('MainScreen', )
 
 from os.path import join
 
+import yuvist
+
 from kivy.lang import Builder
 from kivy.base import EventLoop, stopTouchApp
 from kivy.properties import StringProperty, ListProperty, \

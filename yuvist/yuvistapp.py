@@ -19,6 +19,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+__all__ = ('YuvistApp', )
+
 import yuvist
 
 from kivy.app import App
@@ -79,5 +81,7 @@ class YuvistApp(App):
 if __name__ == '__main__':
 
     import sys
-    app = YuvistApp(command=sys.argv[1:])
+    cmd = sys.argv[1:] if len(sys.argv) > 1 else []
+    app = YuvistApp(command=cmd)
+    app = YuvistApp()
     app.run()
