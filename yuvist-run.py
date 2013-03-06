@@ -25,6 +25,5 @@ if __name__ == '__main__':
     import sys
     from yuvist.yuvistapp import YuvistApp
     cmd = sys.argv[1:] if len(sys.argv) > 1 else []
-    print 'main', cmd
     app = YuvistApp(command=cmd)
     app.run()
