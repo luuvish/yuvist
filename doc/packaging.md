@@ -28,12 +28,15 @@ you can convert your icon.png file to ico with the http://www.convertico.com/
 
     from kivy.tools.packaging.pyinstaller_hooks import install_hooks
     install_hooks(globals())
+    import os
+    gst_plugin_path = os.environ.get('GST_PLUGIN_PATH')
 
 > In the Analysis() command, remove the hookspath=None parameters  
 > Then, you need to change the EXE() call  
 
     coll = COLLECT( exe,
-                    Tree('../yuvist/'),
+                    Tree('..\\yuvist\\'),
+                    Tree(os.path.join(gst_plugin_path, '..')),
                     a.binaries,
                     #...
                   )

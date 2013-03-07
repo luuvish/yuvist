@@ -49,7 +49,7 @@ class Command(object):
                 dest='volume', action='store', metavar='VALUE',
                 default=100, type=int, choices=xrange(0, 101))
         parser.add_argument('-s', '--state', help='state after starting',
-                dest='state', action='store', metavar='STATE',
+                dest='state', action='store',
                 default='play', choices=['play', 'pause', 'stop'])
 
         parser.add_argument('--format', help='YUV image chroma format',

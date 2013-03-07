@@ -23,7 +23,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 if __name__ == '__main__':
 
     import sys
+    sys_argv = sys.argv
+    sys.argv = sys.argv[:1]
     from yuvist.yuvistapp import YuvistApp
-    cmd = sys.argv[1:] if len(sys.argv) > 1 else []
+
+    cmd = sys_argv[1:] if len(sys_argv) > 1 else []
     app = YuvistApp(command=cmd)
     app.run()

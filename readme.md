@@ -22,19 +22,7 @@ Installation
 
 ### Windows 7 ###
 
-***From Package***
-
-Download yuvist-0.9.0.zip from <https://github.com/luuvish/yuvist>
-
-> Download <https://github.com/luuvish/yuvist/archive/release.zip>  
-> Get yuvist-0.9.0.zip from bin directory in yuvist-release.zip  
-
-Unzip file and double-click to run or
-
-    $ yuvist/yuvist.exe your.yuv
-    $ python yuvist/yuvist.py your.yuv
-
-***Python Console***
+***Python Package***
 
 Install [kivy 1.5.1](http://kivy.org/docs/installation/installation-windows.html)
 
@@ -44,25 +32,14 @@ Install [kivy 1.5.1](http://kivy.org/docs/installation/installation-windows.html
 
 Download yuvist from <https://github.com/luuvish/yuvist> and run
 
-> Download <https://github.com/luuvish/yuvist/archive/master.zip>  
+> Download <https://github.com/luuvish/yuvist/archive/0.10.0.zip>  
 > Unzip to your Profile Files folder  
 
-    $ kivy yuvist/yuvist.py your.yuv
+    $ kivy yuvist-run.py your.yuv
 
 ### Mac OS X 10.8 ###
 
-***From Package***
-
-Download yuvist-\<version>.dmg from <https://github.com/luuvish/yuvist>
-
-> Download <https://github.com/luuvish/yuvist/archive/release.zip>  
-> Get yuvist-<version>.dmg from bin directory in yuvist-release.zip  
-
-Mount dmg and double-click to run or
-
-    $ open yuvist-<version>.app --args your.yuv
-
-***Python Console***
+***Python Package***
 
 Require Python 2.7
 
@@ -82,8 +59,60 @@ Install [kivy 1.5.1](http://kivy.org/docs/installation/installation-macosx.html)
 Download yuvist from <https://github.com/luuvish/yuvist> and run
 
     $ git clone https://github.com/luuvish/yuvist
+    $ cd yuvist
     $ make install
-    $ yuvist your.yuv
+
+### Usage ###
+
+***Console Argument***
+
+    $ yuvist [-h] [-1][-2][-3][-4][-f] [-v VALUE] [-s STATE]
+             [--format {yuv400,yuv420,yuv422,yuv422v,yuv444}]
+             [--colorfmt {rgb,luminance}]
+             [--fps VALUE]
+             [--size WIDTH HEIGHT]
+             [FILENAME [FILENAME …]]
+
+argument             | description
+---------------------|----------------------------
+-h, --help           | show help message and exit  
+-1                   | half screen size  
+-2                   | normal screen size  
+-3                   | double screen size  
+-4                   | fit to window size  
+-f, --fullscreen     | fullscreen mode  
+-v, --volume VALUE   | volume of audio (0-100)  
+-s, --state STATE    | state after starting [play,pause,stop]  
+--format VALUE       | toggle play/pause [yuv400,yuv420,yuv422,yuv422v,yuv444]  
+--colorfmt VALUE     | output color format [rgb,luminance]  
+--fps VALUE          | display frames per second (default 30.0)  
+--size WIDTH HEIGHT  | YUV image width and height  
+FILENAME             | video filename  
+
+***Keyboard Binding***
+
+key                  | action
+---------------------|----------------------------
+\<cmd>+1             | half screen size  
+\<cmd>+2             | normal screen size  
+\<cmd>+3             | double screen size  
+\<cmd>+4             | fit to window size  
+\<cmd>+f             | toggle fullscreen  
+\<enter>             | toggle fullscreen  
+\<alt>+\<cmd>+&darr; | audio volume off  
+\<cmd>+&uarr;        | audio volume up  
+\<cmd>+&darr;        | audio volume down  
+\<home>              | video position at beginning  
+\<end>               | video position at end  
+\<cmd>+&larr;        | previous video  
+\<cmd>+&rarr;        | next video  
+[                    | previous frame  
+]                    | next frame  
+\<space>             | toggle play/pause  
+\<cmd>+o             | select video  
+\<alt>+\<cmd>+l      | select playlist  
+\<alt>+\<cmd>+c      | config yuv parameter  
+\<cmd>+q             | quit yuvist  
 
 Credits
 -------

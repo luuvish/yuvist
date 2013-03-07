@@ -22,16 +22,8 @@ __all__ = ()
 
 __version__ = '0.10.0'
 
-
-import sys
-bak_argv = sys.argv
-sys.argv = sys.argv[:1] if len(sys.argv) > 1 else sys.argv[:]
-
 import kivy
 kivy.require('1.5.1')
-
-sys.argv = bak_argv
-
 
 from os.path import dirname
 from kivy.resources import resource_add_path
