@@ -20,10 +20,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 __all__ = ()
 
-__version__ = '0.10.0'
+__version__ = '0.10.1'
 
 import kivy
-kivy.require('1.5.1')
+kivy.require('1.6.0')
 
 from os.path import dirname
 from kivy.resources import resource_add_path

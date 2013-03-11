@@ -96,34 +96,6 @@ class VolumeSlider(Slider):
     background = StringProperty('atlas://data/images/defaulttheme/sliderh_background')
     cursor     = StringProperty('atlas://data/images/defaulttheme/slider_cursor')
 
-    def get_value_pos(self):
-        padding = self.padding
-        x = self.x
-        y = self.y
-        nval = self.value_normalized
-        if self.orientation == 'horizontal':
-            return (x + padding + nval * (self.width - 2 * padding), y)
-        else:
-            return (x, y + padding + nval * (self.height - 2 * padding))
-
-    def set_value_pos(self, pos):
-        padding = self.padding
-        x = min(self.right - padding, max(pos[0], self.x + padding))
-        y = min(self.top - padding, max(pos[1], self.y + padding))
-        if self.orientation == 'horizontal':
-            if self.width == 0:
-                self.value_normalized = 0
-            else:
-                self.value_normalized = (x - self.x - padding) / float(self.width - 2 * padding)
-        else:
-            if self.height == 0:
-                self.value_normalized = 0
-            else:
-                self.value_normalized = (y - self.y - padding) / float(self.height - 2 * padding)
-    value_pos = AliasProperty(get_value_pos, set_value_pos,
-                              bind=('x', 'y', 'width', 'height',
-                                    'min', 'max', 'value_normalized'))
-
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
             touch.grab(self)
